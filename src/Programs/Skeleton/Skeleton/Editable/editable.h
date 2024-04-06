@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "../framework.h"
+#include "../Camera/camera.h"
 
 struct VertexData {
 	vec3 position;
@@ -34,7 +35,6 @@ private:
 
 private:
 	Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
-	Editable(Preset preset);
 	~Editable();
 
 	mat4 calculateLocalMatrix();
@@ -53,11 +53,12 @@ public:
 	static void deinitialize();
 
 	static Editable* add(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
-	static Editable* add(Preset preset);
+	static Editable* add(Editable::Preset preset);
 	static void remove(Editable* edible);
 	static void removeWithChildren(Editable* edible);
 
 	static void renderHierarchy();
+	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight);
 
 private:
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy

@@ -14,38 +14,9 @@
 
 #include "ui/header/header.h"
 
-//shader
-const char* vs = "\n"
-"#version 330 core \n"
-"precision highp float;\n"
-"layout(location = 0) in vec2 aPos; \n"
-"layout(location = 1) in vec2 aUV; \n"
-"out vec2 uv; \n"
-"uniform mat4 model; \n"
-"uniform mat4 view; \n"
-"uniform mat4 projection; \n"
-"void main() { \n"
-"	uv=aUV; \n"
-"	gl_Position = vec4(aPos, 0, 1)*model*view*projection; \n"
-"}\0";
-const char* fs = "\n"
-"#version 330 core	\n"
-"precision highp float;\n"
-"in vec2 uv; \n"
-"out vec4 fragColor;	\n"
-"uniform sampler2D roblox; \n"
-"void main() { \n"
-"	fragColor = texture(roblox, uv); \n"
-"}\0";
+Camera cam;
+vec3 camOrigin;
 
-
-GPUProgram program;
-
-int inAnimation = 0;
-float animationTime = 0;
-float lastAnimationFrame = 0;
-
-float sliderValue = 0.5f;
 void ImguiFrame()
 {
 	int windowWidth, windowHeight;
@@ -68,25 +39,30 @@ void ImguiFrame()
 
 // Initialization, create an OpenGL context
 void onInitialization() {
+	cam = Camera();
+	cam.setPosition(vec3(0, 0, -3));
+	camOrigin = vec3(0, 0, 0);
+	cam.refreshViewMatrix();
+
 	ImGuiLoader::initialize();
 	System::setWindowSize(windowWidth, windowHeight);
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2(windowWidth, windowHeight);
 
 	Editable::initialize();
+	Editable::add(Editable::Preset::CUBE);
 
 	glViewport(0, 0, windowWidth, windowHeight);
-
-
-	program.create(vs, fs, "fragColor");
-
 }
 
 // Window has become invalid: Redraw
 void onDisplay() {
 	glClearColor(0, 0, 0, 0);     // background color
-	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear frame buffer
 
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+	Editable::render3D(cam, vec2(0, 0), vec2(windowWidth - 200, windowHeight - Header::HeightInPixels));
 
 	ImguiFrame();
 

@@ -15,6 +15,7 @@
 #include <math.h>
 #include <vector>
 #include <string>
+#include <string.h>
 
 #if defined(__APPLE__)
 #include <GLUT/GLUT.h>
@@ -162,6 +163,31 @@ inline mat4 RotationMatrix(float angle, vec3 w) {
 			    vec4(w.x*w.y*(1 - c) - w.z*s, c * (1 - w.y*w.y) + w.y*w.y, w.y*w.z*(1 - c) + w.x*s, 0),
 			    vec4(w.x*w.z*(1 - c) + w.y*s, w.y*w.z*(1 - c) - w.x*s, c * (1 - w.z*w.z) + w.z*w.z, 0),
 			    vec4(0, 0, 0, 1));
+}
+
+inline mat4 PerspectiveMatrix(float fov, float aspectXY, float clipNear, float clipFar)
+{
+	float t = tanf(0.01745329252f * 0.5f * fov) * clipNear;
+	float r = t * aspectXY;
+
+	return mat4(clipNear / r, 0, 0, 0, 0, clipNear / t, 0, 0, 0, 0, -(clipFar + clipNear) / (clipFar - clipNear), -2 * clipFar * clipNear / (clipFar - clipNear), 0, 0, -1, 0);
+}
+
+inline mat4 OrthoMatrix(float left, float right, float bottom, float top, float clipNear, float clipFar)
+{
+	//http://www.songho.ca/opengl/gl_projectionmatrix.html
+	return mat4(2 / (right - left), 0, 0, -(right + left) / (right - left), 0, 2 / (top - bottom), 0, -(top + bottom) / (top - bottom), 0, 0, -2 / (clipFar - clipNear), -(clipFar + clipNear) / (clipFar - clipNear), 0, 0, 0, 1);
+}
+
+inline mat4 LookAtMatrix(vec3 pos, vec3 direction, vec3 up)
+{
+	direction = normalize(direction);
+	vec3 right = normalize(cross(direction, up));
+	up = normalize(cross(right, direction));
+
+	mat4 vissza = mat4(right.x, right.y, right.z, 0, up.x, up.y, up.z, 0, direction.x, direction.y, direction.z, 0, 0, 0, 0, 1);
+	vissza = vissza * TranslateMatrix(-pos);
+	return vissza;
 }
 
 //---------------------------
@@ -352,6 +378,81 @@ public:
 		// make this program run
 		glUseProgram(shaderProgramId);
 		return true;
+	}
+
+	bool createFromFile(const char* const pathToVertexShader,
+		const char* const pathToFragmentShader, const char* const fragmentShaderOutputName,
+		const char* const pathToGeometryShader = nullptr)
+	{
+		FILE* file;
+		char* vertexSauce = (char*)malloc(10000 * sizeof(char));
+		int currentLength;
+		char line[300];
+
+		//vertex sharter
+		currentLength = 0;
+		file = fopen(pathToVertexShader, "r");
+		if (file == NULL)
+		{
+			printf("ERROR::SHADER::VERTEX::FILE_NOT_FOUND\n");
+			free(vertexSauce);
+			return false;
+		}
+		while (fgets(line, 300, file) != NULL)
+		{
+			strcpy(vertexSauce + currentLength, line);
+			currentLength += strlen(line);
+		}
+		fclose(file);
+
+		//geometry sharter
+		char* geometrySauce = nullptr;
+		if (pathToGeometryShader != nullptr) {
+			geometrySauce = (char*)malloc(10000 * sizeof(char));
+			currentLength = 0;
+			file = fopen(pathToGeometryShader, "r");
+			if (file == NULL)
+			{
+				printf("ERROR::SHADER::GEOMETRY::FILE_NOT_FOUND\n");
+				free(geometrySauce);
+				return false;
+			}
+			while (fgets(line, 300, file) != NULL)
+			{
+				strcpy(geometrySauce + currentLength, line);
+				currentLength += strlen(line);
+			}
+			fclose(file);
+		}
+
+		//fragment sharter
+		char* fragmentSauce = (char*)malloc(10000 * sizeof(char));
+		currentLength = 0;
+		file = fopen(pathToFragmentShader, "r");
+		if (file == NULL)
+		{
+			printf("ERROR::SHADER::FRAGMENT::FILE_NOT_FOUND\n");
+			free(fragmentSauce);
+			return false;
+		}
+		while (fgets(line, 300, file) != NULL)
+		{
+			strcpy(fragmentSauce + currentLength, line);
+			currentLength += strlen(line);
+		}
+		fclose(file);
+
+		//assemble
+		bool result = false;
+		result=this->create(vertexSauce, fragmentSauce, fragmentShaderOutputName, geometrySauce);
+
+		//cleanup
+		free(vertexSauce);
+		free(fragmentSauce);
+		if (geometrySauce != nullptr)
+			free(geometrySauce);
+
+		return result;
 	}
 
 	void Use() { 		// make this program run

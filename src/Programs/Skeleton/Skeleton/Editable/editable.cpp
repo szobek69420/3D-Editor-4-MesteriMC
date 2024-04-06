@@ -3,11 +3,17 @@
 #include <GL/glew.h>
 #include <string.h>
 
+#include "../framework.h"
+
 #include "../ImGui/imgui.h"
 #include "../System/system.h"
 #include "../ui/header/header.h"
+#include "../Camera/camera.h"
 
 static int editablesCreated = 0;
+
+static GPUProgram program3D, program2D;
+
 
 Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
@@ -42,11 +48,6 @@ Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int ver
 	parent = NULL;
 
 	sprintf_s(name, 100, "object_%d", editablesCreated);
-}
-
-Editable::Editable(Preset preset)
-{
-
 }
 
 Editable::~Editable()
@@ -99,13 +100,36 @@ void Editable::setName(const char* name)
 
 
 //static part
+static VertexData presetVertices_Cube[] = {
+	{vec3(-1,-1,-1),vec2(0,0)},
+	{vec3(1,-1,-1),vec2(0,0)},
+	{vec3(1,-1,1),vec2(0,0)},
+	{vec3(-1,-1,1),vec2(0,0)},
+	{vec3(-1,1,-1),vec2(0,0)},
+	{vec3(1,1,-1),vec2(0,0)},
+	{vec3(1,1,1),vec2(0,0)},
+	{vec3(-1,1,1),vec2(0,0)},
+};
+
+static unsigned int presetIndices_Cube[] = {
+	0,4,1,	4,5,1,
+	1,5,2,	5,6,2,
+	2,6,3,	6,7,3,
+	3,7,0,	7,4,0,
+	0,1,2,	2,3,0,
+	4,6,5,	6,4,7
+};
 
 std::vector<Editable*> Editable::edibles = std::vector<Editable*>();
 
 
 void Editable::initialize()
 {
-
+	program3D.createFromFile(
+		"./assets/shaders/render3D/shader_3d.vag",
+		"./assets/shaders/render3D/shader_3d.fag",
+		"fragColour",
+		nullptr);
 }
 
 void Editable::deinitialize()
@@ -126,8 +150,19 @@ Editable* Editable::add(VertexData* vertices, unsigned int* indices, unsigned in
 
 Editable* Editable::add(Editable::Preset preset)
 {
-	Editable* logus = new Editable(preset);
-	Editable::edibles.push_back(logus);
+	Editable* logus = NULL;
+	switch (preset)
+	{
+	case Editable::Preset::CUBE:
+		logus = new Editable(presetVertices_Cube, presetIndices_Cube, 8, 36);
+		break;
+
+	default:
+		return NULL;
+	}
+
+	if(logus!=NULL)
+		Editable::edibles.push_back(logus);
 	return logus;
 }
 
@@ -181,4 +216,32 @@ void Editable::renderHierarchy()
 	}
 
 	ImGui::End();
+}
+
+
+void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
+{
+	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+
+	//glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
+	glViewport(0, 0, 1000, 1000);
+
+	program3D.Use();
+	program3D.setUniform(projection, "projection");
+	program3D.setUniform(camera.getViewMatrix(), "view");
+	program3D.setUniform(0, "tex");
+
+	for (int i = 0; i < Editable::edibles.size(); i++)
+	{
+		program3D.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
+		glBindVertexArray(Editable::edibles[i]->vao);
+		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
+	}
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+	glViewport(0, 0, windowWidth, windowHeight);
 }

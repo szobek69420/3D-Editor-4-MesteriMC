@@ -54,6 +54,12 @@
     <ClCompile Include="System\system.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Layout\layout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera\camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -98,5 +104,15 @@
     <ClInclude Include="System\system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Layout\layout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\render3D\shader_3d.vag" />
+    <None Include="assets\shaders\render3D\shader_3d.fag" />
   </ItemGroup>
 </Project>

@@ -74,6 +74,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera\camera.cpp" />
     <ClCompile Include="Editable\editable.cpp" />
     <ClCompile Include="framework.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
@@ -84,11 +85,13 @@
     <ClCompile Include="ImGui\imgui_loader.cpp" />
     <ClCompile Include="ImGui\imgui_tables.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Layout\layout.cpp" />
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="System\system.cpp" />
     <ClCompile Include="ui\header\header.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera\camera.h" />
     <ClInclude Include="Editable\editable.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ImGui\imconfig.h" />
@@ -101,8 +104,13 @@
     <ClInclude Include="ImGui\imstb_rectpack.h" />
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
+    <ClInclude Include="Layout\layout.h" />
     <ClInclude Include="System\system.h" />
     <ClInclude Include="ui\header\header.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\render3D\shader_3d.fag" />
+    <None Include="assets\shaders\render3D\shader_3d.vag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

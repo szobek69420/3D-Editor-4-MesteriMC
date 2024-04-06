@@ -1,0 +1,13 @@
+#version 330 core
+
+in vec2 uv;
+
+out vec4 fragColour;
+
+uniform sampler2D tex;
+
+void main()
+{
+	fragColour=texture(tex, uv);
+	fragColour=vec4(1);
+}
