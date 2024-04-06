@@ -5,9 +5,12 @@
 #include "../framework.h"
 #include "../Camera/camera.h"
 
-struct VertexData {
+class VertexData {
+public:
 	vec3 position;
 	vec2 uv;
+
+	VertexData(vec3 _pos, vec2 _uv) :position(_pos), uv(_uv) {}
 };
 
 class Editable {

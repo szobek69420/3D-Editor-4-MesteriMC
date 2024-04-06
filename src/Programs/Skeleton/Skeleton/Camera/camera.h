@@ -17,7 +17,7 @@ public:
 
 	void refreshViewMatrix();
 
-	const vec3& getPosition();
+	vec3& getPosition();
 	void setPosition(const vec3& position);
 
 	void getRotation(float* pitch, float* yaw);

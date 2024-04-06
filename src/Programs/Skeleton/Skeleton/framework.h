@@ -142,6 +142,15 @@ inline mat4 operator*(const mat4& left, const mat4& right) {
 	return result;
 }
 
+inline mat4 Transpose(const mat4& mat)
+{
+	mat4 mat2;
+	for (int i = 0; i < 4; i++) //row
+		for (int j = 0; j < 4; j++) //column
+			mat2[i][j] = mat[j][i];
+	return mat2;
+}
+
 inline mat4 TranslateMatrix(vec3 t) {
 	return mat4(vec4(1,   0,   0,   0),
 			    vec4(0,   1,   0,   0),
@@ -170,7 +179,17 @@ inline mat4 PerspectiveMatrix(float fov, float aspectXY, float clipNear, float c
 	float t = tanf(0.01745329252f * 0.5f * fov) * clipNear;
 	float r = t * aspectXY;
 
-	return mat4(clipNear / r, 0, 0, 0, 0, clipNear / t, 0, 0, 0, 0, -(clipFar + clipNear) / (clipFar - clipNear), -2 * clipFar * clipNear / (clipFar - clipNear), 0, 0, -1, 0);
+	return mat4(clipNear / r, 0, 0, 0,
+		0, clipNear / t, 0, 0,
+		0, 0, -(clipFar + clipNear) / (clipFar - clipNear), -1,
+		0, 0, -2 * clipFar * clipNear / (clipFar - clipNear), 0);
+
+
+	return mat4(
+		clipNear / r, 0, 0, 0, 
+		0, clipNear / t, 0, 0, 
+		0, 0, -(clipFar + clipNear) / (clipFar - clipNear), -2 * clipFar * clipNear / (clipFar - clipNear), 
+		0, 0, -1, 0);
 }
 
 inline mat4 OrthoMatrix(float left, float right, float bottom, float top, float clipNear, float clipFar)
@@ -181,12 +200,23 @@ inline mat4 OrthoMatrix(float left, float right, float bottom, float top, float 
 
 inline mat4 LookAtMatrix(vec3 pos, vec3 direction, vec3 up)
 {
-	direction = normalize(direction);
-	vec3 right = normalize(cross(direction, up));
-	up = normalize(cross(right, direction));
+	vec3 right;
+	mat4 vissza, helper;
 
-	mat4 vissza = mat4(right.x, right.y, right.z, 0, up.x, up.y, up.z, 0, direction.x, direction.y, direction.z, 0, 0, 0, 0, 1);
-	vissza = vissza * TranslateMatrix(-pos);
+	direction = normalize(direction);
+	right = normalize(cross(direction, up));
+	up = normalize(cross(right, direction));
+	direction = -direction;
+
+	vissza = mat4(
+		right.x, up.x, direction.x, 0,
+		right.y, up.y, direction.y, 0,
+		right.z, up.z, direction.z, 0,
+		0, 0, 0, 1
+	);
+	helper = mat4(1, 0, 0, -pos.x, 0, 1, 0, -pos.y, 0, 0, 1, -pos.z, 0, 0, 0, 1);
+	vissza = helper*vissza;
+	vissza = Transpose(vissza);
 	return vissza;
 }
 

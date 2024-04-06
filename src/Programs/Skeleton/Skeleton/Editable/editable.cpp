@@ -101,14 +101,14 @@ void Editable::setName(const char* name)
 
 //static part
 static VertexData presetVertices_Cube[] = {
-	{vec3(-1,-1,-1),vec2(0,0)},
-	{vec3(1,-1,-1),vec2(0,0)},
-	{vec3(1,-1,1),vec2(0,0)},
-	{vec3(-1,-1,1),vec2(0,0)},
-	{vec3(-1,1,-1),vec2(0,0)},
-	{vec3(1,1,-1),vec2(0,0)},
-	{vec3(1,1,1),vec2(0,0)},
-	{vec3(-1,1,1),vec2(0,0)},
+	VertexData(vec3(-1,-1,-1),vec2(0,0)),
+	VertexData(vec3(1,-1,-1),vec2(0,0)),
+	VertexData(vec3(1,-1,1),vec2(0,0)),
+	VertexData(vec3(-1,-1,1),vec2(0,0)),
+	VertexData(vec3(-1,1,-1),vec2(0,0)),
+	VertexData(vec3(1,1,-1),vec2(0,0)),
+	VertexData(vec3(1,1,1),vec2(0,0)),
+	VertexData(vec3(-1,1,1),vec2(0,0))
 };
 
 static unsigned int presetIndices_Cube[] = {
@@ -223,8 +223,8 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 {
 	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
 
-	//glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
-	glViewport(0, 0, 1000, 1000);
+	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
+	glEnable(GL_DEPTH_TEST);
 
 	program3D.Use();
 	program3D.setUniform(projection, "projection");
@@ -244,4 +244,5 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
 	glViewport(0, 0, windowWidth, windowHeight);
+	glDisable(GL_DEPTH_TEST);
 }

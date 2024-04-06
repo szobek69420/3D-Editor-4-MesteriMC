@@ -17,6 +17,11 @@
 Camera cam;
 vec3 camOrigin;
 
+int lastMouseX = 0, lastMouseY = 0;
+int middleButtonDown = 0;
+
+void rotateCamera(int dX, int dY);
+
 void ImguiFrame()
 {
 	int windowWidth, windowHeight;
@@ -40,9 +45,10 @@ void ImguiFrame()
 // Initialization, create an OpenGL context
 void onInitialization() {
 	cam = Camera();
-	cam.setPosition(vec3(0, 0, -3));
+	cam.setPosition(vec3(0, 0, 5.0f));
 	camOrigin = vec3(0, 0, 0);
 	cam.refreshViewMatrix();
+
 
 	ImGuiLoader::initialize();
 	System::setWindowSize(windowWidth, windowHeight);
@@ -88,6 +94,12 @@ void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the 
 	// ImGui mouse motion input processing
 	System::setMousePosition(pX, pY);
 	ImGui_ImplGLUT_MotionFunc(pX, pY);
+
+	rotateCamera(pX-lastMouseX, pY-lastMouseY);
+
+	lastMouseX = pX;
+	lastMouseY = pY;
+
 	glutPostRedisplay();
 }
 
@@ -95,14 +107,33 @@ void onMouseMotionWithoutClick(int pX, int pY)
 {
 	//this isnt called when onMouseMotion is
 	System::setMousePosition(pX, pY);
+	lastMouseX = pX;
+	lastMouseY = pY;
 	glutPostRedisplay();
 }
+
 
 // Mouse click event
 void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
 	// ImGui mouse input processing
 	ImGui_ImplGLUT_MouseFunc(button, state, pX, pY);
 	glutPostRedisplay();
+
+	switch (button)
+	{
+	case GLUT_MIDDLE_BUTTON://middle button
+		switch (state)
+		{
+		case GLUT_DOWN:
+			middleButtonDown = 1;
+			break;
+
+		case GLUT_UP:
+			middleButtonDown = 0;
+			break;
+		}
+		break;
+	}
 }
 
 void onScroll(int button, int dir, int x, int y)
@@ -127,4 +158,28 @@ void onDeinitialization()
 {
 	Editable::deinitialize();
 	ImGuiLoader::destroy();
+}
+
+void rotateCamera(int dX, int dY)
+{
+	vec3 vecA = cam.getPosition() - camOrigin;
+	float l = length(vecA);
+	vec3 vecB = vecA - 0.1f * l *dX* cam.getRight() -0.1f*l*dY*cam.getUp();
+	vecA = normalize(vecA);
+	vecB = normalize(vecB);
+
+	float deltaYaw = dX > 0 ? dot(vec3(vecA.x, 0, vecA.z), vec3(vecB.x, 0, vecB.z)): -dot(vec3(vecA.x, 0, vecA.z), vec3(vecB.x, 0, vecB.z));
+	float deltaPitch = dY > 0 ? dot(vec3(vecA.x, vecB.y, vecA.z), vecA) : -dot(vec3(vecA.x, vecB.y, vecA.z), vecA);
+
+	float yaw, pitch;
+	cam.getRotation(&pitch, &yaw);
+	yaw += deltaYaw;
+	pitch += deltaPitch;
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	else if (pitch < -89.0f)
+		pitch = -89.0f;
+	cam.setRotation(pitch, yaw);
+	cam.setPosition(camOrigin - l * cam.getDirection());
+	cam.refreshViewMatrix();
 }
