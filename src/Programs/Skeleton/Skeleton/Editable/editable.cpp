@@ -225,17 +225,42 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
+	glPointSize(5);
+	glLineWidth(2);
 
 	program3D.Use();
 	program3D.setUniform(projection, "projection");
 	program3D.setUniform(camera.getViewMatrix(), "view");
 	program3D.setUniform(0, "tex");
+	program3D.setUniform(vec3(0), "colour");
 
 	for (int i = 0; i < Editable::edibles.size(); i++)
 	{
 		program3D.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
 		glBindVertexArray(Editable::edibles[i]->vao);
+
+		if (/*texture is loaded*/0)
+			program3D.setUniform(69, "isSampled");
+		else
+		{
+			program3D.setUniform(0, "isSampled");
+			program3D.setUniform(vec3(0.5f,0.5f,0.5f), "colour");
+		}
+
 		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
+
+
+		program3D.setUniform(0, "isSampled");
+
+		program3D.setUniform(vec3(0, 0, 1), "colour");
+		glPolygonMode(GL_FRONT, GL_LINE);
+		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
+		glPolygonMode(GL_FRONT, GL_FILL);
+
+		program3D.setUniform(vec3(1, 0.85f, 0), "colour");
+		glDrawElements(GL_POINTS, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 	}
 
 	glBindVertexArray(0);
@@ -244,5 +269,6 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
 	glViewport(0, 0, windowWidth, windowHeight);
+	glDepthFunc(GL_LESS);
 	glDisable(GL_DEPTH_TEST);
 }

@@ -1,6 +1,7 @@
 #include "framework.h"
 
 #include <GL/freeglut.h>	// must be downloaded unless you have an Apple
+#include <math.h>
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glut.h"
@@ -10,6 +11,8 @@
 
 #include "System/system.h"
 
+#include "Layout/layout.h"
+
 #include "Editable/editable.h"
 
 #include "ui/header/header.h"
@@ -18,9 +21,14 @@ Camera cam;
 vec3 camOrigin;
 
 int lastMouseX = 0, lastMouseY = 0;
+int leftButtonDonw = 0;
 int middleButtonDown = 0;
+int rightButtonDown = 0;
+layout_t currentLayout = Layout::NONE;
 
 void rotateCamera(int dX, int dY);
+void moveOrigin(int dX, int dY);
+void scrollOrigin(int deltaScroll);
 
 void ImguiFrame()
 {
@@ -45,15 +53,19 @@ void ImguiFrame()
 // Initialization, create an OpenGL context
 void onInitialization() {
 	cam = Camera();
-	cam.setPosition(vec3(0, 0, 5.0f));
+	cam.setPosition(vec3(5, 0, 0));
+	cam.setRotation(0, 90);
 	camOrigin = vec3(0, 0, 0);
 	cam.refreshViewMatrix();
+	vec3 dir = cam.getDirection();
 
 
 	ImGuiLoader::initialize();
 	System::setWindowSize(windowWidth, windowHeight);
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2(windowWidth, windowHeight);
+
+	Layout::setLayout(Layout::Preset::Object);
 
 	Editable::initialize();
 	Editable::add(Editable::Preset::CUBE);
@@ -68,7 +80,10 @@ void onDisplay() {
 
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
-	Editable::render3D(cam, vec2(0, 0), vec2(windowWidth - 200, windowHeight - Header::HeightInPixels));
+
+	vec2 bottomLeft, topRight;
+	if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
+		Editable::render3D(cam, bottomLeft, topRight);
 
 	ImguiFrame();
 
@@ -95,7 +110,13 @@ void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the 
 	System::setMousePosition(pX, pY);
 	ImGui_ImplGLUT_MotionFunc(pX, pY);
 
-	rotateCamera(pX-lastMouseX, pY-lastMouseY);
+	if (middleButtonDown && currentLayout == Layout::OBJECT)
+	{
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
+			moveOrigin(pX - lastMouseX, pY - lastMouseY);
+		else
+			rotateCamera(pX - lastMouseX, pY - lastMouseY);
+	}
 
 	lastMouseX = pX;
 	lastMouseY = pY;
@@ -115,9 +136,21 @@ void onMouseMotionWithoutClick(int pX, int pY)
 
 // Mouse click event
 void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
-	// ImGui mouse input processing
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+
 	ImGui_ImplGLUT_MouseFunc(button, state, pX, pY);
-	glutPostRedisplay();
+
+	switch (state)
+	{
+	case GLUT_DOWN:
+		currentLayout = Layout::getLayoutByMousePos(pX, windowHeight-pY);
+		break;
+
+	case GLUT_UP:
+		currentLayout = Layout::NONE;
+		break;
+	}
 
 	switch (button)
 	{
@@ -134,10 +167,17 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 		}
 		break;
 	}
+
+	glutPostRedisplay();
 }
 
 void onScroll(int button, int dir, int x, int y)
 {
+	int pX, pY;
+	System::getMousePosition(&pX, &pY);
+	if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT)
+		scrollOrigin(-dir);
+
 	ImGui_ImplGLUT_MouseWheelFunc(button, dir, x, y);
 	glutPostRedisplay();
 }
@@ -150,6 +190,7 @@ void onIdle() {
 void onReshape(int width, int height)
 {
 	System::setWindowSize(width, height);
+	Layout::refresh();
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2(width, height);
 }
@@ -162,24 +203,40 @@ void onDeinitialization()
 
 void rotateCamera(int dX, int dY)
 {
-	vec3 vecA = cam.getPosition() - camOrigin;
-	float l = length(vecA);
-	vec3 vecB = vecA - 0.1f * l *dX* cam.getRight() -0.1f*l*dY*cam.getUp();
-	vecA = normalize(vecA);
-	vecB = normalize(vecB);
+	static const float SENSITIVITY_ROT = 0.3f;
 
-	float deltaYaw = dX > 0 ? dot(vec3(vecA.x, 0, vecA.z), vec3(vecB.x, 0, vecB.z)): -dot(vec3(vecA.x, 0, vecA.z), vec3(vecB.x, 0, vecB.z));
-	float deltaPitch = dY > 0 ? dot(vec3(vecA.x, vecB.y, vecA.z), vecA) : -dot(vec3(vecA.x, vecB.y, vecA.z), vecA);
-
-	float yaw, pitch;
+	float len = length(cam.getPosition() - camOrigin);
+	float pitch, yaw;
 	cam.getRotation(&pitch, &yaw);
-	yaw += deltaYaw;
-	pitch += deltaPitch;
+	yaw -= SENSITIVITY_ROT*dX;
+	pitch -= SENSITIVITY_ROT * dY;
 	if (pitch > 89.0f)
 		pitch = 89.0f;
-	else if (pitch < -89.0f)
+	if (pitch < -89.0f)
 		pitch = -89.0f;
 	cam.setRotation(pitch, yaw);
-	cam.setPosition(camOrigin - l * cam.getDirection());
+	cam.setPosition(camOrigin - len * cam.getDirection());
+	cam.refreshViewMatrix();
+}
+
+void moveOrigin(int dX, int dY)
+{
+	static const float SENSITIVITY_MOVE_ORIGIN = 0.01f;
+
+	float len = length(cam.getPosition() - camOrigin);
+
+	camOrigin = camOrigin - dX*SENSITIVITY_MOVE_ORIGIN * cam.getRight() + dY * SENSITIVITY_MOVE_ORIGIN* cam.getUp();
+	cam.setPosition(camOrigin - len * cam.getDirection());
+	cam.refreshViewMatrix();
+}
+
+void scrollOrigin(int deltaScroll)
+{
+	static const float SENSITIVITY_SCROLL_ORIGIN = 1.05f;
+
+	vec3 vec=cam.getPosition() - camOrigin;
+	vec = vec* powf(SENSITIVITY_SCROLL_ORIGIN, deltaScroll);
+
+	cam.setPosition(camOrigin +vec);
 	cam.refreshViewMatrix();
 }

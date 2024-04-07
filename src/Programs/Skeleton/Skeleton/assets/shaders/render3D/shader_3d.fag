@@ -5,10 +5,13 @@ in vec3 pos;
 
 out vec4 fragColour;
 
+uniform int isSampled;
 uniform sampler2D tex;
+uniform vec3 colour;
 
 void main()
 {
-	fragColour=texture(tex, uv);
-	fragColour=vec4(0.5*pos+0.5,1);
+	fragColour=vec4(colour,1);
+	if(isSampled!=0)
+		fragColour=texture(tex, uv);
 }

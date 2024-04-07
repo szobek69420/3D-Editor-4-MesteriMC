@@ -206,7 +206,7 @@ inline mat4 LookAtMatrix(vec3 pos, vec3 direction, vec3 up)
 	direction = normalize(direction);
 	right = normalize(cross(direction, up));
 	up = normalize(cross(right, direction));
-	direction = -direction;
+	direction = -1*direction;
 
 	vissza = mat4(
 		right.x, up.x, direction.x, 0,
@@ -214,9 +214,8 @@ inline mat4 LookAtMatrix(vec3 pos, vec3 direction, vec3 up)
 		right.z, up.z, direction.z, 0,
 		0, 0, 0, 1
 	);
-	helper = mat4(1, 0, 0, -pos.x, 0, 1, 0, -pos.y, 0, 0, 1, -pos.z, 0, 0, 0, 1);
+	helper = mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -pos.x, -pos.y, -pos.z, 1);
 	vissza = helper*vissza;
-	vissza = Transpose(vissza);
 	return vissza;
 }
 
