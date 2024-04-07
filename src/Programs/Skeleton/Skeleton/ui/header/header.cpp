@@ -5,6 +5,8 @@
 
 #include "../../System/system.h"
 
+#include "../../Layout/layout.h"
+
 int Header::currentLocalList = Header::LocalList::NONE;
 ImVec2 Header::localListPos = ImVec2();
 
@@ -149,9 +151,12 @@ void Header::render()
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
 
-		ImGui::Button("3D");
-		ImGui::Button("Texture");
-		ImGui::Button("3D | Texture");
+		if (ImGui::Button("3D"))
+			Layout::setLayout(Layout::Preset::Object);
+		if(ImGui::Button("Texture"))
+			Layout::setLayout(Layout::Preset::Uv);
+		if(ImGui::Button("3D | Texture"))
+			Layout::setLayout(Layout::Preset::ObjectUv);
 
 		ImGui::PopStyleColor(3);
 

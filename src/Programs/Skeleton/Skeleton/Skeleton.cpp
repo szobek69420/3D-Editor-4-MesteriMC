@@ -16,6 +16,7 @@
 #include "Editable/editable.h"
 
 #include "ui/header/header.h"
+#include "ui/uv_editor/uv_editor.h"
 
 Camera cam;
 vec3 camOrigin;
@@ -42,6 +43,10 @@ void ImguiFrame()
 	do {
 		Header::render();
 		Editable::renderHierarchy();
+
+		vec2 bottomLeft, topRight;
+		if(Layout::getLayoutBounds(Layout::UV,&bottomLeft, &topRight))
+			UVEditor::render(bottomLeft, topRight);
 	} while (0);
 
 
@@ -184,7 +189,7 @@ void onScroll(int button, int dir, int x, int y)
 
 // Idle event indicating that some time elapsed: do animation here
 void onIdle() {
-	glutPostRedisplay();
+
 }
 
 void onReshape(int width, int height)

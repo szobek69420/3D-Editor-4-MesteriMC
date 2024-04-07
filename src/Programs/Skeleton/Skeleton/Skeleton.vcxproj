@@ -89,6 +89,7 @@
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="System\system.cpp" />
     <ClCompile Include="ui\header\header.cpp" />
+    <ClCompile Include="ui\uv_editor\uv_editor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera\camera.h" />
@@ -107,6 +108,7 @@
     <ClInclude Include="Layout\layout.h" />
     <ClInclude Include="System\system.h" />
     <ClInclude Include="ui\header\header.h" />
+    <ClInclude Include="ui\uv_editor\uv_editor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\render3D\shader_3d.fag" />
