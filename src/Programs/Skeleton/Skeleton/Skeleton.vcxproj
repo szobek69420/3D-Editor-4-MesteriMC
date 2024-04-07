@@ -88,6 +88,8 @@
     <ClCompile Include="Layout\layout.cpp" />
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="System\system.cpp" />
+    <ClCompile Include="TextureLoader\stb_image.cpp" />
+    <ClCompile Include="TextureLoader\texture_loader.cpp" />
     <ClCompile Include="ui\header\header.cpp" />
     <ClCompile Include="ui\uv_editor\uv_editor.cpp" />
   </ItemGroup>
@@ -107,10 +109,16 @@
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Layout\layout.h" />
     <ClInclude Include="System\system.h" />
+    <ClInclude Include="TextureLoader\stb_image.h" />
+    <ClInclude Include="TextureLoader\texture_loader.h" />
     <ClInclude Include="ui\header\header.h" />
     <ClInclude Include="ui\uv_editor\uv_editor.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\shaders\render2D\shader_2d.fag" />
+    <None Include="assets\shaders\render2D\shader_2d.vag" />
+    <None Include="assets\shaders\render2D\shader_2d_rectangle.fag" />
+    <None Include="assets\shaders\render2D\shader_2d_rectangle.vag" />
     <None Include="assets\shaders\render3D\shader_3d.fag" />
     <None Include="assets\shaders\render3D\shader_3d.vag" />
   </ItemGroup>

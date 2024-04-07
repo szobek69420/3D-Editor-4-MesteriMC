@@ -36,6 +36,8 @@ private:
 	std::vector<VertexData> vertices;
 	std::vector<unsigned int> indices;
 
+	unsigned int albedo=0;
+
 private:
 	Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
 	~Editable();
@@ -46,6 +48,9 @@ public:
 	void recalculateGlobalMatrix(const mat4& parentGlobalModel); //recalculates also the children
 	void setParent(Editable* parent);//NULL means no fatherless
 	void setName(const char* name);
+
+	void setAlbedo(unsigned int texture);
+	unsigned int getAlbedo();
 
 	//static part
 private:
@@ -62,6 +67,7 @@ public:
 
 	static void renderHierarchy();
 	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight);
+	static void render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight);
 
 private:
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy

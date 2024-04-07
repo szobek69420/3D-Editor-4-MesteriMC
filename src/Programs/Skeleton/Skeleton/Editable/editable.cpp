@@ -12,8 +12,11 @@
 
 static int editablesCreated = 0;
 
-static GPUProgram program3D, program2D;
+static GPUProgram program3D, program2D, program2DRectangle;
+static unsigned int rectangleVAO, rectangleVBO;
+static float rectangleVBOContent[] = { -1,-1,1,-1,1,1,1,1,-1,1,-1,-1 };
 
+extern Editable* selectedEditable;
 
 Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
@@ -55,6 +58,9 @@ Editable::~Editable()
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
 	glDeleteBuffers(1, &ebo);
+
+	if (this->albedo)
+		glDeleteTextures(1, &this->albedo);
 }
 
 mat4 Editable::calculateLocalMatrix()
@@ -98,6 +104,17 @@ void Editable::setName(const char* name)
 	strcpy_s(this->name, 100, name);
 }
 
+void Editable::setAlbedo(unsigned int texture)
+{
+	if (this->albedo != 0)
+		glDeleteTextures(1, &this->albedo);
+	this->albedo = texture;
+}
+unsigned int Editable::getAlbedo()
+{
+	return this->albedo;
+}
+
 
 //static part
 static VertexData presetVertices_Cube[] = {
@@ -130,6 +147,25 @@ void Editable::initialize()
 		"./assets/shaders/render3D/shader_3d.fag",
 		"fragColour",
 		nullptr);
+
+	program2D.createFromFile("./assets/shaders/render2D/shader_2d.vag",
+		"./assets/shaders/render2D/shader_2d.fag",
+		"fragColour",
+		nullptr);
+
+	program2DRectangle.createFromFile("./assets/shaders/render2D/shader_2d_rectangle.vag",
+		"./assets/shaders/render2D/shader_2d_rectangle.fag",
+		"fragColour",
+		nullptr);
+
+	glGenVertexArrays(1, &rectangleVAO);
+	glBindVertexArray(rectangleVAO);
+	glGenBuffers(1, &rectangleVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, rectangleVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVBOContent), rectangleVBOContent, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
+	glBindVertexArray(0);
 }
 
 void Editable::deinitialize()
@@ -137,6 +173,9 @@ void Editable::deinitialize()
 	for (int i = 0; i < Editable::edibles.size(); i++)
 		delete edibles[i];
 	edibles.clear();
+
+	glDeleteVertexArrays(1, &rectangleVAO);
+	glDeleteBuffers(1, &rectangleVBO);
 }
 
 
@@ -271,4 +310,30 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 	glViewport(0, 0, windowWidth, windowHeight);
 	glDepthFunc(GL_LESS);
 	glDisable(GL_DEPTH_TEST);
+}
+
+void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight)
+{
+	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
+
+	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+	
+	//render texture
+	program2DRectangle.Use();
+	program2DRectangle.setUniform(0, "tex");
+	if (selectedEditable == NULL || selectedEditable->getAlbedo() == 0)
+		program2DRectangle.setUniform(0, "isSampled");
+	else
+	{
+		program2DRectangle.setUniform(69, "isSampled");
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, selectedEditable->getAlbedo());
+	}
+
+	program2DRectangle.setUniform(cum.getViewMatrix(), "view");
+	program2DRectangle.setUniform(projection, "projection");
+
+	glBindVertexArray(rectangleVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
 }

@@ -1,0 +1,14 @@
+#version 330 core
+
+layout (location=0) in vec2 aPos;
+
+out vec2 uv;
+
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+	uv=0.5*aPos+0.5;
+	gl_Position=vec4(aPos.xy,0,1)*view*projection;
+}

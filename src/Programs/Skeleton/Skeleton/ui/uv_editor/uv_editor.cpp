@@ -2,8 +2,11 @@
 
 #include "../../ImGui/imgui.h"
 #include "../../System/system.h"
+#include "../../Editable/editable.h"
+#include "../../TextureLoader/texture_loader.h"
 
 OPENFILENAMEA UVEditor::ofn;
+extern Editable* selectedEditable;
 
 void UVEditor::render(vec2 bottomLeft, vec2 topRight)
 {
@@ -17,7 +20,7 @@ void UVEditor::render(vec2 bottomLeft, vec2 topRight)
 	ImGui::SetNextWindowPos(ImVec2(bottomLeft.x + 0.5f * (topRight.x - bottomLeft.x) - 100, windowHeight-topRight.y));
 	ImGui::SetNextWindowSize(ImVec2(200, 20));
 	ImGui::Begin("uv_editor_header", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-	if (ImGui::Button("Import"))
+	if (selectedEditable!=NULL&&ImGui::Button("Import"))
 	{
 		OPENFILENAMEA open;
 		CHAR szFile[MAX_PATH] = { 0 }; // Initialize buffer for file path
@@ -34,6 +37,7 @@ void UVEditor::render(vec2 bottomLeft, vec2 topRight)
 		// Display the Open dialog box
 		if (GetOpenFileNameA(&open) == TRUE) {
 			UVEditor::ofn = open;
+			selectedEditable->setAlbedo(TextureLoader::load(ofn.lpstrFile, GL_LINEAR, 69));
 		}
 	}
 	ImGui::End();

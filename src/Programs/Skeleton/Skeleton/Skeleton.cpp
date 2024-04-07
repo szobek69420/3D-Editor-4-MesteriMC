@@ -18,8 +18,10 @@
 #include "ui/header/header.h"
 #include "ui/uv_editor/uv_editor.h"
 
-Camera cam;
+Camera cam, cam2D;
 vec3 camOrigin;
+
+Editable* selectedEditable = NULL;
 
 int lastMouseX = 0, lastMouseY = 0;
 int leftButtonDonw = 0;
@@ -58,11 +60,14 @@ void ImguiFrame()
 // Initialization, create an OpenGL context
 void onInitialization() {
 	cam = Camera();
-	cam.setPosition(vec3(5, 0, 0));
-	cam.setRotation(0, 90);
-	camOrigin = vec3(0, 0, 0);
+	cam.setPosition(vec3(3, 2.449466f, 3));
+	cam.setRotation(-30, 45);
 	cam.refreshViewMatrix();
-	vec3 dir = cam.getDirection();
+	camOrigin = vec3(0, 0, 0);
+
+	cam2D = Camera();
+	cam2D.setPosition(vec3(0, 0, 5));
+	cam2D.refreshViewMatrix();
 
 
 	ImGuiLoader::initialize();
@@ -73,7 +78,7 @@ void onInitialization() {
 	Layout::setLayout(Layout::Preset::Object);
 
 	Editable::initialize();
-	Editable::add(Editable::Preset::CUBE);
+	selectedEditable=Editable::add(Editable::Preset::CUBE);
 
 	glViewport(0, 0, windowWidth, windowHeight);
 }
@@ -89,6 +94,8 @@ void onDisplay() {
 	vec2 bottomLeft, topRight;
 	if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
 		Editable::render3D(cam, bottomLeft, topRight);
+	if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
+		Editable::render2D(cam2D, bottomLeft, topRight);
 
 	ImguiFrame();
 

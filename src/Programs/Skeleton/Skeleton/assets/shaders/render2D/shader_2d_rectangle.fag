@@ -1,0 +1,12 @@
+#version 330 core
+in vec2 uv;
+out vec4 fragColour;
+uniform sampler2D tex;
+uniform int isSampled;
+
+void main()
+{
+	fragColour=vec4(0.5,0.5,0.5,1.0);
+	if(isSampled!=0)
+		fragColour=texture(tex, uv);
+}

@@ -63,6 +63,12 @@
     <ClCompile Include="ui\uv_editor\uv_editor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TextureLoader\texture_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureLoader\stb_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -116,9 +122,19 @@
     <ClInclude Include="ui\uv_editor\uv_editor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TextureLoader\texture_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureLoader\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\render3D\shader_3d.vag" />
     <None Include="assets\shaders\render3D\shader_3d.fag" />
+    <None Include="assets\shaders\render2D\shader_2d.vag" />
+    <None Include="assets\shaders\render2D\shader_2d.fag" />
+    <None Include="assets\shaders\render2D\shader_2d_rectangle.vag" />
+    <None Include="assets\shaders\render2D\shader_2d_rectangle.fag" />
   </ItemGroup>
 </Project>
