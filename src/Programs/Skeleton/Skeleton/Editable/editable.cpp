@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <string.h>
+#include <vector>
 
 #include "../framework.h"
 
@@ -17,7 +18,7 @@ static unsigned int rectangleVAO, rectangleVBO;
 static float rectangleVBOContent[] = { 0,0,1,0,1,1,1,1,0,1,0,0 };
 
 extern Editable* selectedEditable;
-extern int selectedVertexID;
+extern std::vector<unsigned int> selectedVertexIDs;
 
 Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
@@ -338,13 +339,17 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 	glDisable(GL_DEPTH_TEST);
 
 	//render selected
-	if (selectedEditable != NULL && selectedVertexID != -1)
+	if (selectedEditable != NULL && selectedVertexIDs.size()!=0)
 	{
 		program3D.setUniform(0, "isSampled");
 		program3D.setUniform(vec3(1, 0, 0), "colour");
 		program3D.setUniform(selectedEditable->globalModelMatrix, "model");
 		glBindVertexArray(selectedEditable->vao);
-		glDrawArrays(GL_POINTS, selectedVertexID, 1);
+		
+		for (int i = 0; i < selectedVertexIDs.size(); i++)
+		{
+			glDrawArrays(GL_POINTS, selectedVertexIDs[i], 1);
+		}
 	}
 
 
@@ -399,10 +404,12 @@ void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight)
 		program2D.setUniform(vec3(1, 0.85f, 0), "colour");
 		glDrawElements(GL_POINTS, selectedEditable->indices.size(), GL_UNSIGNED_INT, NULL);
 
-		if (selectedVertexID != -1)
+		if (selectedVertexIDs.size() != 0)
 		{
 			program2D.setUniform(vec3(1, 0, 0), "colour");
-			glDrawArrays(GL_POINTS, selectedVertexID, 1);
+			
+			for(int i=0;i<selectedVertexIDs.size();i++)
+				glDrawArrays(GL_POINTS, selectedVertexIDs[i], 1);
 		}
 	}
 

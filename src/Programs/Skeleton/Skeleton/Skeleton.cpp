@@ -39,7 +39,7 @@ Camera cam, cam2D;
 vec3 camOrigin;
 
 Editable* selectedEditable = NULL;
-int selectedVertexID = -1;
+std::vector<unsigned int> selectedVertexIDs;
 
 int lastMouseX = 0, lastMouseY = 0;
 int leftButtonDonw = 0;
@@ -52,11 +52,12 @@ std::vector<OperationRollbackItem> operationRollback;
 void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
 void scrollOrigin(int deltaScroll);
-void selectPoint3D(int pX, int pY);
+void selectPoint3D(int pX, int pY, int append);
 
 void move2D(int dX, int dY);
 void scroll2D(int deltaScroll);
 
+void startOperation(Operation op);
 void endOperation(int discard = 0);
 void processOperation(int dX, int dY);
 
@@ -139,13 +140,13 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 		switch (Layout::getLayoutByMousePos(pX, pY))
 		{
 		case Layout::OBJECT:
-			if(selectedVertexID!=-1)
-				currentOperation = Operation::MOVE_VERTEX;
+			if(selectedVertexIDs.size()!=0)
+				startOperation(Operation::MOVE_VERTEX);
 			break;
 
 		case Layout::UV:
-			if (selectedVertexID != -1)
-				currentOperation = Operation::MOVE_VERTEX_UV;
+			if (selectedVertexIDs.size() != 0)
+				startOperation(Operation::MOVE_VERTEX_UV);
 			break;
 		}
 	}
@@ -233,7 +234,11 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		endOperation();
-		selectPoint3D(pX, pY);
+		selectPoint3D(pX, pY, glutGetModifiers()==GLUT_ACTIVE_SHIFT? 69: 0);
+	}
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+	{
+		endOperation(69);
 	}
 
 	glutPostRedisplay();
@@ -320,7 +325,7 @@ void scrollOrigin(int deltaScroll)
 	cam.refreshViewMatrix();
 }
 
-void selectPoint3D(int pX, int pY)
+void selectPoint3D(int pX, int pY, int append)
 {
 	if (selectedEditable == NULL)
 		return;
@@ -364,8 +369,31 @@ void selectPoint3D(int pX, int pY)
 			minDistance = distance;
 		}
 	}
-	selectedVertexID = closest;
 	
+	if (closest == -1)
+		selectedVertexIDs.clear();
+	else
+	{
+		if (append != 0)
+		{
+			char contains = 0;
+			for (int i = 0; i < selectedVertexIDs.size(); i++)
+			{
+				if (selectedVertexIDs[i] == closest)
+				{
+					contains = 69;
+					break;
+				}
+			}
+			if (contains == 0)
+				selectedVertexIDs.push_back(closest);
+		}
+		else
+		{
+			selectedVertexIDs.clear();
+			selectedVertexIDs.push_back(closest);
+		}
+	}
 }
 
 
@@ -392,6 +420,18 @@ void move2D(int dX, int dY)
 }
 
 //operation
+void startOperation(Operation op)
+{
+	if (selectedEditable == NULL || selectedVertexIDs.size() == 0)
+		return;
+
+	const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+	for(int i=0;i<selectedVertexIDs.size();i++)
+		operationRollback.push_back(OperationRollbackItem(vertices[selectedVertexIDs[i]], selectedVertexIDs[i]));
+
+	currentOperation = op;
+}
+
 void endOperation(int discard)
 {
 	if (discard != 0)
@@ -408,19 +448,28 @@ void endOperation(int discard)
 void processOperation(int dX, int dY)
 {
 	VertexData vd;
+	vec2 delta2;
+	vec3 delta3;
 	switch (currentOperation)
 	{
 	case Operation::MOVE_VERTEX_UV:
-		vd = selectedEditable->getVertices()[selectedVertexID];
-		vd.uv = vd.uv + 0.00115f* cam2D.getPosition().z*vec2(dX, -dY);
-		selectedEditable->setVertexData(selectedVertexID, vd);
+		delta2= 0.00115f * cam2D.getPosition().z * vec2(dX, -dY);
+		for (int i = 0; i < selectedVertexIDs.size(); i++)
+		{
+			vd = selectedEditable->getVertices()[selectedVertexIDs[i]];
+			vd.uv = vd.uv + delta2;
+			selectedEditable->setVertexData(selectedVertexIDs[i], vd);
+		}
 		break;
 
 	case Operation::MOVE_VERTEX:
-		vd = selectedEditable->getVertices()[selectedVertexID];
-		vd.position = vd.position + 0.00115f * dX * cam.getRight();
-		vd.position = vd.position - 0.00115f * dY * cam.getUp();
-		selectedEditable->setVertexData(selectedVertexID, vd);
+		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		for (int i = 0; i < selectedVertexIDs.size(); i++)
+		{
+			vd = selectedEditable->getVertices()[selectedVertexIDs[i]];
+			vd.position = vd.position + delta3;
+			selectedEditable->setVertexData(selectedVertexIDs[i], vd);
+		}
 		break;
 	}
 }
