@@ -64,3 +64,17 @@ vec3 Camera::getUp() const
 	vec3 up = cross(right, direction);
 	return up;
 }
+
+
+//static part
+float Camera::fov = 60;
+
+float Camera::getFov()
+{
+	return Camera::fov;
+}
+
+void Camera::setFov(float fov)
+{
+	Camera::fov = fov;
+}

@@ -17,6 +17,7 @@ static unsigned int rectangleVAO, rectangleVBO;
 static float rectangleVBOContent[] = { -1,-1,1,-1,1,1,1,1,-1,1,-1,-1 };
 
 extern Editable* selectedEditable;
+extern int selectedVertexID;
 
 Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
@@ -103,6 +104,24 @@ void Editable::setName(const char* name)
 {
 	strcpy_s(this->name, 100, name);
 }
+
+
+const std::vector<VertexData>& Editable::getVertices()
+{
+	return this->vertices;
+}
+
+void Editable::setVertexData(unsigned int vertexID, VertexData data)
+{
+	this->vertices[vertexID] = data;
+}
+
+
+mat4 Editable::getGlobalMatrix()
+{
+	return this->globalModelMatrix;
+}
+
 
 void Editable::setAlbedo(unsigned int texture)
 {
@@ -280,8 +299,12 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 		program3D.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
 		glBindVertexArray(Editable::edibles[i]->vao);
 
-		if (/*texture is loaded*/0)
+		if (Editable::edibles[i]->albedo != 0)
+		{
 			program3D.setUniform(69, "isSampled");
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, Editable::edibles[i]->albedo);
+		}
 		else
 		{
 			program3D.setUniform(0, "isSampled");
@@ -302,14 +325,26 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 		glDrawElements(GL_POINTS, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 	}
 
+	glDepthFunc(GL_LESS);
+	glDisable(GL_DEPTH_TEST);
+
+	//render selected
+	if (selectedEditable != NULL && selectedVertexID != -1)
+	{
+		program3D.setUniform(0, "isSampled");
+		program3D.setUniform(vec3(1, 0, 0), "colour");
+		program3D.setUniform(selectedEditable->globalModelMatrix, "model");
+		glBindVertexArray(selectedEditable->vao);
+		glDrawArrays(GL_POINTS, selectedVertexID, 1);
+	}
+
+
 	glBindVertexArray(0);
 	glUseProgram(0);
 
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
 	glViewport(0, 0, windowWidth, windowHeight);
-	glDepthFunc(GL_LESS);
-	glDisable(GL_DEPTH_TEST);
 }
 
 void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight)

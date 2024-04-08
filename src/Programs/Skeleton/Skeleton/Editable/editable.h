@@ -49,6 +49,11 @@ public:
 	void setParent(Editable* parent);//NULL means no fatherless
 	void setName(const char* name);
 
+	const std::vector<VertexData>& getVertices();
+	void setVertexData(unsigned int vertexID, VertexData data);
+
+	mat4 getGlobalMatrix();
+
 	void setAlbedo(unsigned int texture);
 	unsigned int getAlbedo();
 

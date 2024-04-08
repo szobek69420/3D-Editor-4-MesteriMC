@@ -22,6 +22,7 @@ Camera cam, cam2D;
 vec3 camOrigin;
 
 Editable* selectedEditable = NULL;
+int selectedVertexID = -1;
 
 int lastMouseX = 0, lastMouseY = 0;
 int leftButtonDonw = 0;
@@ -32,6 +33,7 @@ layout_t currentLayout = Layout::NONE;
 void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
 void scrollOrigin(int deltaScroll);
+void selectPoint3D(int pX, int pY);
 
 void ImguiFrame()
 {
@@ -180,6 +182,9 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 		break;
 	}
 
+	if(button==GLUT_LEFT_BUTTON&&state==GLUT_DOWN)
+		selectPoint3D(pX, pY);
+
 	glutPostRedisplay();
 }
 
@@ -251,4 +256,52 @@ void scrollOrigin(int deltaScroll)
 
 	cam.setPosition(camOrigin +vec);
 	cam.refreshViewMatrix();
+}
+
+void selectPoint3D(int pX, int pY)
+{
+	if (selectedEditable == NULL)
+		return;
+
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+
+	vec2 bottomLeft, topRight;
+	if (Layout::getLayoutByMousePos(pX, pY) != Layout::OBJECT || Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight) == 0)
+		return;
+	
+	vec2 ndc = vec2(
+		2.0f * (pX - bottomLeft.x) / (topRight.x - bottomLeft.x) - 1,
+		2.0f * (pY - bottomLeft.y-(windowHeight-topRight.y)) / (topRight.y - bottomLeft.y) - 1);
+
+	float szam = sinf(0.01745329252f * 0.5f*Camera::getFov());
+	float szam2 = (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y);
+
+	ndc.x *= szam*szam2;
+	ndc.y *= szam*(-1);
+
+	vec3 raycastDir = normalize(vec3(ndc.x, ndc.y, -cosf(0.01745329252f * 0.5f*Camera::getFov())));
+	mat4 mv = selectedEditable->getGlobalMatrix()*cam.getViewMatrix();
+	const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+
+	int closest = -1;
+	float minDistance = 1000000;
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		vec4 vertexPosTemp = vec4(vertices[i].position.x, vertices[i].position.y, vertices[i].position.z, 1) *  mv;
+		vec3 vertexPos = vec3(vertexPosTemp.x, vertexPosTemp.y, vertexPosTemp.z);
+
+		float distance = sqrtf(
+			powf(length(vertexPos),2)-
+			powf(dot(vertexPos,raycastDir),2)
+		);
+
+		if (distance<0.1f&&distance < minDistance)
+		{
+			closest = i;
+			minDistance = distance;
+		}
+	}
+	selectedVertexID = closest;
+	
 }

@@ -16,7 +16,7 @@ unsigned int TextureLoader::load(const char* pathToTexture, int filterType, int 
     int width, height, nrChannels;
 
     unsigned char* data = stbi_load(pathToTexture, &width, &height, &nrChannels, 0);
-    
+    printf("%c\n", data[width * height * nrChannels - 1]);
     if (data != NULL)
     {
         switch (nrChannels)

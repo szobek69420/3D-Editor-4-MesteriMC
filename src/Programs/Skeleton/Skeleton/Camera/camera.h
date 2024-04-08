@@ -28,6 +28,14 @@ public:
 	vec3 getDirection() const;
 	vec3 getRight() const;
 	vec3 getUp() const;
+
+	//static part
+private :
+	static float fov;
+
+public:
+	static float getFov();
+	static void setFov(float fov);
 };
 
 #endif
