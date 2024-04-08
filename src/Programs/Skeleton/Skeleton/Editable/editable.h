@@ -10,6 +10,7 @@ public:
 	vec3 position;
 	vec2 uv;
 
+	VertexData() : position(vec3()), uv(vec2()) {}
 	VertexData(vec3 _pos, vec2 _uv) :position(_pos), uv(_uv) {}
 };
 
@@ -37,6 +38,7 @@ private:
 	std::vector<unsigned int> indices;
 
 	unsigned int albedo=0;
+	char albedoPath[200];
 
 private:
 	Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
@@ -54,8 +56,9 @@ public:
 
 	mat4 getGlobalMatrix();
 
-	void setAlbedo(unsigned int texture);
+	void setAlbedo(unsigned int texture, const char* albedoPath = "");
 	unsigned int getAlbedo();
+	const char* getAlbedoPath();
 
 	//static part
 private:

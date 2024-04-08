@@ -18,6 +18,23 @@
 #include "ui/header/header.h"
 #include "ui/uv_editor/uv_editor.h"
 
+enum Operation {
+	NONE,
+	MOVE_VERTEX, MOVE_VERTEX_UV
+};
+
+class OperationRollbackItem {
+public:
+	struct VertexData data;
+	unsigned int vertexID;
+
+	OperationRollbackItem(struct VertexData data, unsigned int vertexID)
+	{
+		this->data = data;
+		this->vertexID = vertexID;
+	}
+};
+
 Camera cam, cam2D;
 vec3 camOrigin;
 
@@ -29,11 +46,19 @@ int leftButtonDonw = 0;
 int middleButtonDown = 0;
 int rightButtonDown = 0;
 layout_t currentLayout = Layout::NONE;
+int currentOperation = Operation::NONE;
+std::vector<OperationRollbackItem> operationRollback;
 
 void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
 void scrollOrigin(int deltaScroll);
 void selectPoint3D(int pX, int pY);
+
+void move2D(int dX, int dY);
+void scroll2D(int deltaScroll);
+
+void endOperation(int discard = 0);
+void processOperation(int dX, int dY);
 
 void ImguiFrame()
 {
@@ -68,7 +93,7 @@ void onInitialization() {
 	camOrigin = vec3(0, 0, 0);
 
 	cam2D = Camera();
-	cam2D.setPosition(vec3(0, 0, 5));
+	cam2D.setPosition(vec3(0.5f, 0.5f, 5));
 	cam2D.refreshViewMatrix();
 
 
@@ -106,7 +131,25 @@ void onDisplay() {
 
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
-	// ImGui keyboard input processing
+	
+	endOperation(69);
+
+	if (key == 'g')
+	{
+		switch (Layout::getLayoutByMousePos(pX, pY))
+		{
+		case Layout::OBJECT:
+			if(selectedVertexID!=-1)
+				currentOperation = Operation::MOVE_VERTEX;
+			break;
+
+		case Layout::UV:
+			if (selectedVertexID != -1)
+				currentOperation = Operation::MOVE_VERTEX_UV;
+			break;
+		}
+	}
+
 	ImGui_ImplGLUT_KeyboardFunc(key, pX, pY);
 
 	glutPostRedisplay();
@@ -132,15 +175,20 @@ void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the 
 			rotateCamera(pX - lastMouseX, pY - lastMouseY);
 	}
 
+	if (middleButtonDown && currentLayout == Layout::UV)
+		move2D(pX - lastMouseX, pY - lastMouseY);
+
 	lastMouseX = pX;
 	lastMouseY = pY;
 
 	glutPostRedisplay();
 }
 
-void onMouseMotionWithoutClick(int pX, int pY)
+void onMouseMotionWithoutClick(int pX, int pY)//this isnt called when onMouseMotion is
 {
-	//this isnt called when onMouseMotion is
+	processOperation(pX - lastMouseX, pY - lastMouseY);
+
+
 	System::setMousePosition(pX, pY);
 	lastMouseX = pX;
 	lastMouseY = pY;
@@ -182,8 +230,11 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 		break;
 	}
 
-	if(button==GLUT_LEFT_BUTTON&&state==GLUT_DOWN)
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		endOperation();
 		selectPoint3D(pX, pY);
+	}
 
 	glutPostRedisplay();
 }
@@ -192,8 +243,17 @@ void onScroll(int button, int dir, int x, int y)
 {
 	int pX, pY;
 	System::getMousePosition(&pX, &pY);
-	if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT)
-		scrollOrigin(-dir);
+	switch (Layout::getLayoutByMousePos(pX, pY))
+	{
+		case Layout::OBJECT:
+			scrollOrigin(-dir);
+			break;
+
+		case Layout::UV:
+			scroll2D(-dir);
+			break;
+	}
+
 
 	ImGui_ImplGLUT_MouseWheelFunc(button, dir, x, y);
 	glutPostRedisplay();
@@ -217,6 +277,8 @@ void onDeinitialization()
 	Editable::deinitialize();
 	ImGuiLoader::destroy();
 }
+
+//3d functinos
 
 void rotateCamera(int dX, int dY)
 {
@@ -304,4 +366,61 @@ void selectPoint3D(int pX, int pY)
 	}
 	selectedVertexID = closest;
 	
+}
+
+
+//2d functions
+void scroll2D(int deltaScroll)
+{
+	static const float SENSITIVITY_SCROLL_2D = 1.05f;
+
+	cam2D.getPosition().z *=  powf(SENSITIVITY_SCROLL_2D, deltaScroll);
+
+	if (cam2D.getPosition().z < 0.11f)
+		cam2D.getPosition().z = 0.11f;
+	else if (cam2D.getPosition().z > 99.0f)
+		cam2D.getPosition().z = 99.0f;
+
+	cam2D.refreshViewMatrix();
+}
+
+void move2D(int dX, int dY)
+{
+	static const float SENSITIVITY_MOVE_2D = 0.01f;
+	cam2D.setPosition(cam2D.getPosition() - SENSITIVITY_MOVE_2D * vec3(dX, -dY,0));
+	cam2D.refreshViewMatrix();
+}
+
+//operation
+void endOperation(int discard)
+{
+	if (discard != 0)
+	{
+		for (int i = 0; i < operationRollback.size(); i++)
+		{
+			selectedEditable->setVertexData(operationRollback[i].vertexID, operationRollback[i].data);
+		}
+	}
+	operationRollback.clear();
+	currentOperation = Operation::NONE;
+}
+
+void processOperation(int dX, int dY)
+{
+	VertexData vd;
+	switch (currentOperation)
+	{
+	case Operation::MOVE_VERTEX_UV:
+		vd = selectedEditable->getVertices()[selectedVertexID];
+		vd.uv = vd.uv + 0.00115f* cam2D.getPosition().z*vec2(dX, -dY);
+		selectedEditable->setVertexData(selectedVertexID, vd);
+		break;
+
+	case Operation::MOVE_VERTEX:
+		vd = selectedEditable->getVertices()[selectedVertexID];
+		vd.position = vd.position + 0.00115f * dX * cam.getRight();
+		vd.position = vd.position - 0.00115f * dY * cam.getUp();
+		selectedEditable->setVertexData(selectedVertexID, vd);
+		break;
+	}
 }

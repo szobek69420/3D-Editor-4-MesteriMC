@@ -14,7 +14,7 @@ static int editablesCreated = 0;
 
 static GPUProgram program3D, program2D, program2DRectangle;
 static unsigned int rectangleVAO, rectangleVBO;
-static float rectangleVBOContent[] = { -1,-1,1,-1,1,1,1,1,-1,1,-1,-1 };
+static float rectangleVBOContent[] = { 0,0,1,0,1,1,1,1,0,1,0,0 };
 
 extern Editable* selectedEditable;
 extern int selectedVertexID;
@@ -52,6 +52,7 @@ Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int ver
 	parent = NULL;
 
 	sprintf_s(name, 100, "object_%d", editablesCreated);
+	strcpy(albedoPath, "");
 }
 
 Editable::~Editable()
@@ -114,6 +115,8 @@ const std::vector<VertexData>& Editable::getVertices()
 void Editable::setVertexData(unsigned int vertexID, VertexData data)
 {
 	this->vertices[vertexID] = data;
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, vertexID * sizeof(VertexData), sizeof(VertexData), &data);
 }
 
 
@@ -123,15 +126,21 @@ mat4 Editable::getGlobalMatrix()
 }
 
 
-void Editable::setAlbedo(unsigned int texture)
+void Editable::setAlbedo(unsigned int texture, const char* albedoPath)
 {
 	if (this->albedo != 0)
 		glDeleteTextures(1, &this->albedo);
 	this->albedo = texture;
+	strcpy_s(this->albedoPath, 200, albedoPath);
 }
 unsigned int Editable::getAlbedo()
 {
 	return this->albedo;
+}
+
+const char* Editable::getAlbedoPath()
+{
+	return this->albedoPath;
 }
 
 
@@ -317,9 +326,9 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 		program3D.setUniform(0, "isSampled");
 
 		program3D.setUniform(vec3(0, 0, 1), "colour");
-		glPolygonMode(GL_FRONT, GL_LINE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
-		glPolygonMode(GL_FRONT, GL_FILL);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		program3D.setUniform(vec3(1, 0.85f, 0), "colour");
 		glDrawElements(GL_POINTS, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
@@ -370,5 +379,33 @@ void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight)
 
 	glBindVertexArray(rectangleVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+	//render object
+	if (selectedEditable != NULL)
+	{
+		program2D.Use();
+		program2D.setUniform(projection, "projection");
+		program2D.setUniform(cum.getViewMatrix(), "view");
+		
+		glBindVertexArray(selectedEditable->vao);
+
+
+		program2D.setUniform(vec3(0, 0, 1), "colour");
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDrawElements(GL_TRIANGLES, selectedEditable->indices.size(), GL_UNSIGNED_INT, NULL);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		program2D.setUniform(vec3(1, 0.85f, 0), "colour");
+		glDrawElements(GL_POINTS, selectedEditable->indices.size(), GL_UNSIGNED_INT, NULL);
+
+		if (selectedVertexID != -1)
+		{
+			program2D.setUniform(vec3(1, 0, 0), "colour");
+			glDrawArrays(GL_POINTS, selectedVertexID, 1);
+		}
+	}
+
 	glBindVertexArray(0);
+	glUseProgram(0);
 }
