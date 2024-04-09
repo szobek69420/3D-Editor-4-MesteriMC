@@ -42,7 +42,6 @@ void Layout::setLayout(const layout_t* panels, unsigned int count)
 
 	int width, height;
 	System::getWindowSize(&width, &height);
-	height -= Header::HeightInPixels;
 	width -= 200;	
 
 	Layout::panels.clear();
@@ -50,9 +49,9 @@ void Layout::setLayout(const layout_t* panels, unsigned int count)
 	{
 		vec2 top, bottom;
 		bottom.x = i * (width / count);
-		bottom.y = 0;
+		bottom.y = height;
 		top.x = (i + 1) * (width / count);
-		top.y = height;
+		top.y = Header::HeightInPixels;
 
 		Layout::panels.push_back(LayoutPanelInfo::create(panels[i], bottom, top));
 	}
@@ -90,8 +89,9 @@ layout_t Layout::getLayoutByMousePos(int pX, int pY)
 {
 	for (int i = 0; i < Layout::panels.size(); i++)
 	{
-		if (pX<Layout::panels[i].bottomLeft.x || pX>Layout::panels[i].topRight.x || pY<Layout::panels[i].bottomLeft.y || pY>Layout::panels[i].topRight.y)
+		if (pX<Layout::panels[i].bottomLeft.x || pX>Layout::panels[i].topRight.x || pY>Layout::panels[i].bottomLeft.y || pY<Layout::panels[i].topRight.y)
 			continue;
+
 		return Layout::panels[i].type;
 	}
 	return Layout::NONE;

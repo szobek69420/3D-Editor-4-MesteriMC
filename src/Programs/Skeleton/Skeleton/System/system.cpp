@@ -30,3 +30,9 @@ void System::setWindowSize(int width, int height)
 	System::windowWidth = width;
 	System::windowHeight = height;
 }
+
+vec2 System::convertScreenToGl(vec2 screenCoords)
+{
+	screenCoords.y = System::windowHeight - screenCoords.y;
+	return screenCoords;
+}

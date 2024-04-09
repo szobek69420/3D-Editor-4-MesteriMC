@@ -37,6 +37,7 @@ public:
 
 Camera cam, cam2D;
 vec3 camOrigin;
+float cam2Dzoom = 2.0f;
 
 Editable* selectedEditable = NULL;
 std::vector<unsigned int> selectedVertexIDs;
@@ -48,6 +49,7 @@ int rightButtonDown = 0;
 layout_t currentLayout = Layout::NONE;
 int currentOperation = Operation::NONE;
 std::vector<OperationRollbackItem> operationRollback;
+float operationHelper1; vec2 operationHelper2; vec3 operationHelper3;
 
 void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
@@ -56,6 +58,7 @@ void selectPoint3D(int pX, int pY, int append);
 
 void move2D(int dX, int dY);
 void scroll2D(int deltaScroll);
+void selectPoint2D(int pX, int pY, int append);
 
 void startOperation(Operation op);
 void endOperation(int discard = 0);
@@ -94,7 +97,7 @@ void onInitialization() {
 	camOrigin = vec3(0, 0, 0);
 
 	cam2D = Camera();
-	cam2D.setPosition(vec3(0.5f, 0.5f, 5));
+	cam2D.setPosition(vec3(0.5f, 0.5f, 1));
 	cam2D.refreshViewMatrix();
 
 
@@ -121,9 +124,9 @@ void onDisplay() {
 
 	vec2 bottomLeft, topRight;
 	if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
-		Editable::render3D(cam, bottomLeft, topRight);
+		Editable::render3D(cam, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight));
 	if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
-		Editable::render2D(cam2D, bottomLeft, topRight);
+		Editable::render2D(cam2D, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight), cam2Dzoom);
 
 	ImguiFrame();
 
@@ -207,7 +210,7 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	switch (state)
 	{
 	case GLUT_DOWN:
-		currentLayout = Layout::getLayoutByMousePos(pX, windowHeight-pY);
+		currentLayout = Layout::getLayoutByMousePos(pX, pY);
 		break;
 
 	case GLUT_UP:
@@ -235,6 +238,7 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	{
 		endOperation();
 		selectPoint3D(pX, pY, glutGetModifiers()==GLUT_ACTIVE_SHIFT? 69: 0);
+		selectPoint2D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
 	}
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
@@ -339,10 +343,10 @@ void selectPoint3D(int pX, int pY, int append)
 	
 	vec2 ndc = vec2(
 		2.0f * (pX - bottomLeft.x) / (topRight.x - bottomLeft.x) - 1,
-		2.0f * (pY - bottomLeft.y-(windowHeight-topRight.y)) / (topRight.y - bottomLeft.y) - 1);
+		2.0f * (pY - topRight.y) / (bottomLeft.y- topRight.y) - 1);
 
 	float szam = sinf(0.01745329252f * 0.5f*Camera::getFov());
-	float szam2 = (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y);
+	float szam2 = (topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y);
 
 	ndc.x *= szam*szam2;
 	ndc.y *= szam*(-1);
@@ -363,7 +367,7 @@ void selectPoint3D(int pX, int pY, int append)
 			powf(dot(vertexPos,raycastDir),2)
 		);
 
-		if (distance<0.1f&&distance < minDistance)
+		if (vertexPos.z<0&&distance<0.1f&&distance < minDistance)
 		{
 			closest = i;
 			minDistance = distance;
@@ -402,9 +406,9 @@ void scroll2D(int deltaScroll)
 {
 	static const float SENSITIVITY_SCROLL_2D = 1.05f;
 
-	cam2D.getPosition().z *=  powf(SENSITIVITY_SCROLL_2D, deltaScroll);
+	cam2Dzoom *=  powf(SENSITIVITY_SCROLL_2D, deltaScroll);
 
-	if (cam2D.getPosition().z < 0.11f)
+	if (cam2D.getPosition().z < 0.01f)
 		cam2D.getPosition().z = 0.11f;
 	else if (cam2D.getPosition().z > 99.0f)
 		cam2D.getPosition().z = 99.0f;
@@ -414,9 +418,73 @@ void scroll2D(int deltaScroll)
 
 void move2D(int dX, int dY)
 {
-	static const float SENSITIVITY_MOVE_2D = 0.01f;
+	float SENSITIVITY_MOVE_2D = cam2Dzoom*0.002f;
 	cam2D.setPosition(cam2D.getPosition() - SENSITIVITY_MOVE_2D * vec3(dX, -dY,0));
 	cam2D.refreshViewMatrix();
+}
+
+void selectPoint2D(int pX, int pY, int append)
+{
+	if (selectedEditable == NULL)
+		return;
+
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+
+	vec2 bottomLeft, topRight;
+	if (Layout::getLayoutByMousePos(pX, pY) != Layout::UV || Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight) == 0)
+		return;
+
+	vec2 ndc = vec2(
+		2.0f * (pX - bottomLeft.x) / (topRight.x - bottomLeft.x) - 1,
+		-2.0f * (pY - topRight.y) / (bottomLeft.y- topRight.y) + 1);
+
+
+	float aspectXY = (topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y);
+	mat4 vp = cam2D.getViewMatrix()* OrthoMatrix(-0.5f * aspectXY * cam2Dzoom, 0.5f * aspectXY * cam2Dzoom, -0.5f * cam2Dzoom, 0.5f * cam2Dzoom, 0, 10.0f);
+	const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+
+	int closest = -1;
+	float minDistance = 1000000;
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		vec4 vertexPosTemp = vec4(vertices[i].uv.x, vertices[i].uv.y, 0, 1) * vp;
+		vec2 vertexPos = vec2(vertexPosTemp.x/vertexPosTemp.w, vertexPosTemp.y/vertexPosTemp.w);
+
+		float distance = length(ndc-vertexPos);
+
+		if (distance < minDistance)
+		{
+			if(distance<0.1f)
+				closest = i;
+			minDistance = distance;
+		}
+	}
+
+	if (closest == -1)
+		selectedVertexIDs.clear();
+	else
+	{
+		if (append != 0)
+		{
+			char contains = 0;
+			for (int i = 0; i < selectedVertexIDs.size(); i++)
+			{
+				if (selectedVertexIDs[i] == closest)
+				{
+					contains = 69;
+					break;
+				}
+			}
+			if (contains == 0)
+				selectedVertexIDs.push_back(closest);
+		}
+		else
+		{
+			selectedVertexIDs.clear();
+			selectedVertexIDs.push_back(closest);
+		}
+	}
 }
 
 //operation
@@ -453,7 +521,7 @@ void processOperation(int dX, int dY)
 	switch (currentOperation)
 	{
 	case Operation::MOVE_VERTEX_UV:
-		delta2= 0.00115f * cam2D.getPosition().z * vec2(dX, -dY);
+		delta2= 0.002f * cam2Dzoom * vec2(dX, -dY);
 		for (int i = 0; i < selectedVertexIDs.size(); i++)
 		{
 			vd = selectedEditable->getVertices()[selectedVertexIDs[i]];

@@ -289,14 +289,15 @@ void Editable::renderHierarchy()
 
 void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 {
-	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
-
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
 	glPointSize(5);
 	glLineWidth(2);
+
+	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
 
 	program3D.Use();
 	program3D.setUniform(projection, "projection");
@@ -361,11 +362,12 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 	glViewport(0, 0, windowWidth, windowHeight);
 }
 
-void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight)
+void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float zoom)
 {
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
 
-	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+	float aspectXY = (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y);
+	mat4 projection = OrthoMatrix(-0.5f*aspectXY*zoom, 0.5f*aspectXY*zoom, -0.5f*zoom, 0.5f*zoom, 0,10);
 	
 	//render texture
 	program2DRectangle.Use();

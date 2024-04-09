@@ -75,7 +75,7 @@ public:
 
 	static void renderHierarchy();
 	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight);
-	static void render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight);
+	static void render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float zoom);
 
 private:
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy

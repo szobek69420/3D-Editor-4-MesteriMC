@@ -17,7 +17,7 @@ void UVEditor::render(vec2 bottomLeft, vec2 topRight)
 	System::getWindowSize(&windowWidth, &windowHeight);
 
 	ImGui::SetNextWindowBgAlpha(0);
-	ImGui::SetNextWindowPos(ImVec2(bottomLeft.x + 0.5f * (topRight.x - bottomLeft.x) - 100, windowHeight-topRight.y));
+	ImGui::SetNextWindowPos(ImVec2(bottomLeft.x + 0.5f * (topRight.x - bottomLeft.x) - 100, topRight.y));
 	ImGui::SetNextWindowSize(ImVec2(300, 20));
 	ImGui::Begin("uv_editor_header", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 	
