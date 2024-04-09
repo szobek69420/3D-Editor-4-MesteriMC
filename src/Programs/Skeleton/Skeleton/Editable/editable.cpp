@@ -108,7 +108,7 @@ void Editable::setName(const char* name)
 }
 
 
-const std::vector<VertexData>& Editable::getVertices()
+const std::vector<VertexData>& Editable::getVertices() const
 {
 	return this->vertices;
 }
@@ -118,6 +118,12 @@ void Editable::setVertexData(unsigned int vertexID, VertexData data)
 	this->vertices[vertexID] = data;
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, vertexID * sizeof(VertexData), sizeof(VertexData), &data);
+}
+
+
+const std::vector<unsigned int>& Editable::getIndices() const
+{
+	return this->indices;
 }
 
 
@@ -287,7 +293,7 @@ void Editable::renderHierarchy()
 }
 
 
-void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
+void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices)
 {
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
 
@@ -315,6 +321,7 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 			program3D.setUniform(69, "isSampled");
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, Editable::edibles[i]->albedo);
+			program3D.setUniform(vec3(1, 1, 1), "colour");
 		}
 		else
 		{
@@ -322,8 +329,13 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight)
 			program3D.setUniform(vec3(0.5f,0.5f,0.5f), "colour");
 		}
 
+		if(Editable::edibles[i]==selectedEditable)//highlight colour
+			program3D.setUniform(vec3(0, 1, 1), "colour");
+
 		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 
+		if (showVertices == 0 || Editable::edibles[i] != selectedEditable)
+			continue;
 
 		program3D.setUniform(0, "isSampled");
 

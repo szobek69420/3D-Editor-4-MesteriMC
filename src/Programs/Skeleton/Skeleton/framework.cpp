@@ -5,6 +5,10 @@
 //=============================================================================================
 #include "framework.h"
 
+vec3::vec3(vec4 v) { x = v.x; y = v.y; z = v.z; }
+
+
+
 // Initialization
 void onInitialization();
 

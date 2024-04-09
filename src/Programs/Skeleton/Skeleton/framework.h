@@ -28,6 +28,8 @@
 #include <GL/freeglut.h>	// must be downloaded unless you have an Apple
 #endif
 
+struct vec4;
+
 // Resolution of screen
 const unsigned int windowWidth = 600, windowHeight = 600;
 
@@ -62,6 +64,7 @@ struct vec3 {
 
 	vec3(float x0 = 0, float y0 = 0, float z0 = 0) { x = x0; y = y0; z = z0; }
 	vec3(vec2 v) { x = v.x; y = v.y; z = 0; }
+	vec3(vec4 v);
 
 	vec3 operator*(float a) const { return vec3(x * a, y * a, z * a); }
 	vec3 operator/(float a) const { return vec3(x / a, y / a, z / a); }
@@ -87,7 +90,7 @@ inline vec3 operator*(float a, const vec3& v) { return vec3(v.x * a, v.y * a, v.
 struct vec4 {
 //--------------------------
 	float x, y, z, w;
-
+	vec4(vec3 xyz, float w=1) { x = xyz.x; y = xyz.y; z = xyz.z; this->w = w; }
 	vec4(float x0 = 0, float y0 = 0, float z0 = 0, float w0 = 0) { x = x0; y = y0; z = z0; w = w0; }
 	float& operator[](int j) { return *(&x + j); }
 	float operator[](int j) const { return *(&x + j); }
@@ -107,6 +110,7 @@ inline float dot(const vec4& v1, const vec4& v2) {
 inline vec4 operator*(float a, const vec4& v) {
 	return vec4(v.x * a, v.y * a, v.z * a, v.w * a);
 }
+
 
 //---------------------------
 struct mat4 { // row-major matrix 4x4

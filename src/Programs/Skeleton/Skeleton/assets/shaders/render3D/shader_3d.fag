@@ -13,5 +13,5 @@ void main()
 {
 	fragColour=vec4(colour,1);
 	if(isSampled!=0)
-		fragColour=texture(tex, uv);
+		fragColour*=texture(tex, uv);
 }

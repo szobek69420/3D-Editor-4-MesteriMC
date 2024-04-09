@@ -39,8 +39,10 @@ Camera cam, cam2D;
 vec3 camOrigin;
 float cam2Dzoom = 2.0f;
 
+std::vector<Editable*> editablesInScene;
 Editable* selectedEditable = NULL;
 std::vector<unsigned int> selectedVertexIDs;
+int showVertices = 0;
 
 int lastMouseX = 0, lastMouseY = 0;
 int leftButtonDonw = 0;
@@ -55,6 +57,7 @@ void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
 void scrollOrigin(int deltaScroll);
 void selectPoint3D(int pX, int pY, int append);
+void selectObject3D(int pX, int pY);
 
 void move2D(int dX, int dY);
 void scroll2D(int deltaScroll);
@@ -109,7 +112,7 @@ void onInitialization() {
 	Layout::setLayout(Layout::Preset::Object);
 
 	Editable::initialize();
-	selectedEditable=Editable::add(Editable::Preset::CUBE);
+	editablesInScene.push_back(Editable::add(Editable::Preset::CUBE));
 
 	glViewport(0, 0, windowWidth, windowHeight);
 }
@@ -124,7 +127,7 @@ void onDisplay() {
 
 	vec2 bottomLeft, topRight;
 	if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
-		Editable::render3D(cam, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight));
+		Editable::render3D(cam, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight), showVertices);
 	if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
 		Editable::render2D(cam2D, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight), cam2Dzoom);
 
@@ -138,21 +141,30 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 	
 	endOperation(69);
 
-	if (key == 'g')
+	switch(key)
 	{
-		switch (Layout::getLayoutByMousePos(pX, pY))
-		{
-		case Layout::OBJECT:
-			if(selectedVertexIDs.size()!=0)
-				startOperation(Operation::MOVE_VERTEX);
+		case 'g':
+			switch (Layout::getLayoutByMousePos(pX, pY))
+			{
+			case Layout::OBJECT:
+				if(selectedVertexIDs.size()!=0)
+					startOperation(Operation::MOVE_VERTEX);
+				break;
+
+			case Layout::UV:
+				if (selectedVertexIDs.size() != 0)
+					startOperation(Operation::MOVE_VERTEX_UV);
+				break;
+			}
 			break;
 
-		case Layout::UV:
-			if (selectedVertexIDs.size() != 0)
-				startOperation(Operation::MOVE_VERTEX_UV);
+		case '\t':
+			endOperation(69);
+			selectedVertexIDs.clear();
+			showVertices = 1 - showVertices;
 			break;
-		}
 	}
+	
 
 	ImGui_ImplGLUT_KeyboardFunc(key, pX, pY);
 
@@ -237,7 +249,12 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		endOperation();
-		selectPoint3D(pX, pY, glutGetModifiers()==GLUT_ACTIVE_SHIFT? 69: 0);
+		
+		if (showVertices == 0)//object mode
+			selectObject3D(pX, pY);
+		else//edit mode
+			selectPoint3D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
+
 		selectPoint2D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
 	}
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
@@ -400,6 +417,63 @@ void selectPoint3D(int pX, int pY, int append)
 	}
 }
 
+void selectObject3D(int pX, int pY)
+{
+	vec2 bottomLeft, topRight;
+	if (Layout::getLayoutByMousePos(pX, pY) != Layout::OBJECT || Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight) == 0)
+		return;
+
+	vec3 ndc = vec3(
+		2.0f * (pX - bottomLeft.x) / (topRight.x - bottomLeft.x) - 1,
+		-2.0f * (pY - topRight.y) / (bottomLeft.y - topRight.y) + 1,
+		0);
+
+	mat4 vp = cam.getViewMatrix()*PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+
+
+	int closest = -1;
+	float minZ = 100000;
+	int jooldalak = 0;
+	for (int j = 0; j < editablesInScene.size(); j++)
+	{
+		const std::vector<VertexData>& vertices = editablesInScene[j]->getVertices();
+		const std::vector<unsigned int>& indices = editablesInScene[j]->getIndices();
+
+		for (int i = 0; i < indices.size(); i += 3)
+		{
+			vec4 a4 = vertices[indices[i]].position*vp, b4 = vertices[indices[i + 1]].position*vp, c4 = vertices[indices[i + 2]].position*vp;
+			vec3 a = a4, b = b4, c = c4;
+			a = a / a4.w; b = b / b4.w; c = c / c4.w;
+			float avgZ = 0.3333f * (a.z + b.z + c.z);
+			if (avgZ < 0)
+				continue;
+
+			a.z = 0; b.z = 0; c.z = 0;
+			int positives = 0;
+			if (cross(ndc - a, b - a).z > 0)
+				positives++;
+			if (cross(ndc - b, c - b).z > 0)
+				positives++;
+			if (cross(ndc - c, a - c).z > 0)
+				positives++;
+
+			if (positives != 0 && positives != 3)
+				continue;
+			jooldalak++;
+			if (avgZ < minZ)
+			{
+				closest = j;
+				minZ = avgZ;
+			}
+		}
+	}
+	printf("%d %d\n", closest, jooldalak);
+	if (closest == -1)
+		selectedEditable = NULL;
+	else
+		selectedEditable = editablesInScene[closest];
+}
+
 
 //2d functions
 void scroll2D(int deltaScroll)
@@ -427,9 +501,6 @@ void selectPoint2D(int pX, int pY, int append)
 {
 	if (selectedEditable == NULL)
 		return;
-
-	int windowWidth, windowHeight;
-	System::getWindowSize(&windowWidth, &windowHeight);
 
 	vec2 bottomLeft, topRight;
 	if (Layout::getLayoutByMousePos(pX, pY) != Layout::UV || Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight) == 0)

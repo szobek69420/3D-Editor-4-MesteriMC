@@ -51,8 +51,10 @@ public:
 	void setParent(Editable* parent);//NULL means no fatherless
 	void setName(const char* name);
 
-	const std::vector<VertexData>& getVertices();
+	const std::vector<VertexData>& getVertices() const;
 	void setVertexData(unsigned int vertexID, VertexData data);
+
+	const std::vector<unsigned int>& getIndices() const;
 
 	mat4 getGlobalMatrix();
 
@@ -74,7 +76,7 @@ public:
 	static void removeWithChildren(Editable* edible);
 
 	static void renderHierarchy();
-	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight);
+	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices);
 	static void render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float zoom);
 
 private:
