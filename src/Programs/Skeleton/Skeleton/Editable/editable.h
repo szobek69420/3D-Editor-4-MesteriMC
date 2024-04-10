@@ -47,7 +47,7 @@ private:
 	mat4 calculateLocalMatrix();
 
 public:
-	void recalculateGlobalMatrix(const mat4& parentGlobalModel); //recalculates also the children
+	void recalculateGlobalMatrix(); //recalculates also the children
 	void setParent(Editable* parent);//NULL means no fatherless
 	void setName(const char* name);
 
@@ -61,6 +61,15 @@ public:
 	void setAlbedo(unsigned int texture, const char* albedoPath = "");
 	unsigned int getAlbedo();
 	const char* getAlbedoPath();
+
+	vec3 getPosition();
+	void setPosition(const vec3& position);
+
+	vec3 getRotation();
+	void setRotation(const vec3& rotation);
+
+	vec3 getScale();
+	void setScale(const vec3& scale);
 
 	//static part
 private:

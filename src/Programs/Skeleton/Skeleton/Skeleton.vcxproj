@@ -77,6 +77,7 @@
     <ClCompile Include="Camera\camera.cpp" />
     <ClCompile Include="Editable\editable.cpp" />
     <ClCompile Include="framework.cpp" />
+    <ClCompile Include="Grid\grid.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
     <ClCompile Include="ImGui\imgui_demo.cpp" />
     <ClCompile Include="ImGui\imgui_draw.cpp" />
@@ -97,6 +98,7 @@
     <ClInclude Include="Camera\camera.h" />
     <ClInclude Include="Editable\editable.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Grid\grid.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_impl_glut.h" />
@@ -115,6 +117,9 @@
     <ClInclude Include="ui\uv_editor\uv_editor.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\shaders\grid\shader_grid.fag" />
+    <None Include="assets\shaders\grid\shader_grid.vag" />
+    <None Include="assets\shaders\grid\shader_grid_2.vag" />
     <None Include="assets\shaders\render2D\shader_2d.fag" />
     <None Include="assets\shaders\render2D\shader_2d.vag" />
     <None Include="assets\shaders\render2D\shader_2d_rectangle.fag" />

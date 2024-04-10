@@ -12,6 +12,7 @@
 #include "System/system.h"
 
 #include "Layout/layout.h"
+#include "Grid/grid.h"
 
 #include "Editable/editable.h"
 
@@ -20,15 +21,31 @@
 
 enum Operation {
 	NONE,
-	MOVE_VERTEX, MOVE_VERTEX_UV
+	MOVE_OBJECT, MOVE_VERTEX, MOVE_VERTEX_UV
 };
 
-class OperationRollbackItem {
+class OperationRollbackItemObject {
+public:
+	Editable* edible;
+	vec3 position;
+	vec3 rotation;
+	vec3 scale;
+
+	OperationRollbackItemObject(Editable* edible, const vec3& position, const vec3& rotation, const vec3& scale)
+	{
+		this->edible = edible;
+		this->position = position;
+		this->rotation = rotation;
+		this->scale = scale;
+	}
+};
+
+class OperationRollbackItemVertex {
 public:
 	struct VertexData data;
 	unsigned int vertexID;
 
-	OperationRollbackItem(struct VertexData data, unsigned int vertexID)
+	OperationRollbackItemVertex(struct VertexData data, unsigned int vertexID)
 	{
 		this->data = data;
 		this->vertexID = vertexID;
@@ -50,7 +67,8 @@ int middleButtonDown = 0;
 int rightButtonDown = 0;
 layout_t currentLayout = Layout::NONE;
 int currentOperation = Operation::NONE;
-std::vector<OperationRollbackItem> operationRollback;
+std::vector<OperationRollbackItemObject> operationRollbackObject;
+std::vector<OperationRollbackItemVertex> operationRollbackVertex;
 float operationHelper1; vec2 operationHelper2; vec3 operationHelper3;
 
 void rotateCamera(int dX, int dY);
@@ -67,29 +85,7 @@ void startOperation(Operation op);
 void endOperation(int discard = 0);
 void processOperation(int dX, int dY);
 
-void ImguiFrame()
-{
-	int windowWidth, windowHeight;
-	System::getWindowSize(&windowWidth, &windowHeight);
-
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGLUT_NewFrame();
-	ImGui::NewFrame();
-
-	do {
-		Header::render();
-		Editable::renderHierarchy();
-
-		vec2 bottomLeft, topRight;
-		if(Layout::getLayoutBounds(Layout::UV,&bottomLeft, &topRight))
-			UVEditor::render(bottomLeft, topRight);
-	} while (0);
-
-
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-}
+void ImguiFrame();
 
 // Initialization, create an OpenGL context
 void onInitialization() {
@@ -109,12 +105,21 @@ void onInitialization() {
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2(windowWidth, windowHeight);
 
+	Grid::initialize();
+
 	Layout::setLayout(Layout::Preset::Object);
 
 	Editable::initialize();
 	editablesInScene.push_back(Editable::add(Editable::Preset::CUBE));
 
 	glViewport(0, 0, windowWidth, windowHeight);
+}
+
+void onDeinitialization()
+{
+	Grid::deinitialize();
+	Editable::deinitialize();
+	ImGuiLoader::destroy();
 }
 
 // Window has become invalid: Redraw
@@ -127,9 +132,19 @@ void onDisplay() {
 
 	vec2 bottomLeft, topRight;
 	if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
-		Editable::render3D(cam, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight), showVertices);
+	{
+		bottomLeft = System::convertScreenToGl(bottomLeft);
+		topRight = System::convertScreenToGl(topRight);
+
+		Grid::setColour(0.3f, 0.3f, 0.3f);
+		Grid::setStepSize(1);
+		Grid::render(200, bottomLeft, topRight, cam, -100);
+		Editable::render3D(cam, bottomLeft, topRight, showVertices);
+	}
 	if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
 		Editable::render2D(cam2D, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight), cam2Dzoom);
+
+
 
 	ImguiFrame();
 
@@ -147,8 +162,16 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			switch (Layout::getLayoutByMousePos(pX, pY))
 			{
 			case Layout::OBJECT:
-				if(selectedVertexIDs.size()!=0)
-					startOperation(Operation::MOVE_VERTEX);
+				if (showVertices == 0)//object mode
+				{
+					if (selectedEditable != NULL)
+						startOperation(Operation::MOVE_OBJECT);
+				}
+				else//edit mode
+				{
+					if (selectedVertexIDs.size() != 0)
+						startOperation(Operation::MOVE_VERTEX);
+				}
 				break;
 
 			case Layout::UV:
@@ -159,9 +182,9 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			break;
 
 		case '\t':
-			endOperation(69);
 			selectedVertexIDs.clear();
-			showVertices = 1 - showVertices;
+			if(selectedEditable!=NULL)
+				showVertices = 1 - showVertices;
 			break;
 	}
 	
@@ -298,10 +321,30 @@ void onReshape(int width, int height)
 	io.DisplaySize = ImVec2(width, height);
 }
 
-void onDeinitialization()
+
+
+void ImguiFrame()
 {
-	Editable::deinitialize();
-	ImGuiLoader::destroy();
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGLUT_NewFrame();
+	ImGui::NewFrame();
+
+	do {
+		Header::render();
+		Editable::renderHierarchy();
+
+		vec2 bottomLeft, topRight;
+		if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
+			UVEditor::render(bottomLeft, topRight);
+	} while (0);
+
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 }
 
 //3d functinos
@@ -433,7 +476,6 @@ void selectObject3D(int pX, int pY)
 
 	int closest = -1;
 	float minZ = 100000;
-	int jooldalak = 0;
 	for (int j = 0; j < editablesInScene.size(); j++)
 	{
 		const std::vector<VertexData>& vertices = editablesInScene[j]->getVertices();
@@ -459,7 +501,7 @@ void selectObject3D(int pX, int pY)
 
 			if (positives != 0 && positives != 3)
 				continue;
-			jooldalak++;
+
 			if (avgZ < minZ)
 			{
 				closest = j;
@@ -467,7 +509,6 @@ void selectObject3D(int pX, int pY)
 			}
 		}
 	}
-	printf("%d %d\n", closest, jooldalak);
 	if (closest == -1)
 		selectedEditable = NULL;
 	else
@@ -561,12 +602,14 @@ void selectPoint2D(int pX, int pY, int append)
 //operation
 void startOperation(Operation op)
 {
-	if (selectedEditable == NULL || selectedVertexIDs.size() == 0)
+	if (selectedEditable == NULL || (selectedVertexIDs.size() == 0 && showVertices!=0))
 		return;
+
+	operationRollbackObject.push_back(OperationRollbackItemObject(selectedEditable, selectedEditable->getPosition(), selectedEditable->getRotation(), selectedEditable->getScale()));
 
 	const std::vector<VertexData>& vertices = selectedEditable->getVertices();
 	for(int i=0;i<selectedVertexIDs.size();i++)
-		operationRollback.push_back(OperationRollbackItem(vertices[selectedVertexIDs[i]], selectedVertexIDs[i]));
+		operationRollbackVertex.push_back(OperationRollbackItemVertex(vertices[selectedVertexIDs[i]], selectedVertexIDs[i]));
 
 	currentOperation = op;
 }
@@ -575,12 +618,22 @@ void endOperation(int discard)
 {
 	if (discard != 0)
 	{
-		for (int i = 0; i < operationRollback.size(); i++)
+		for (int i = 0; i < operationRollbackObject.size(); i++)
 		{
-			selectedEditable->setVertexData(operationRollback[i].vertexID, operationRollback[i].data);
+			operationRollbackObject[i].edible->setPosition(operationRollbackObject[i].position);
+			operationRollbackObject[i].edible->setScale(operationRollbackObject[i].scale);
+			operationRollbackObject[i].edible->setRotation(operationRollbackObject[i].rotation);
+			operationRollbackObject[i].edible->recalculateGlobalMatrix();
+		}
+
+		for (int i = 0; i < operationRollbackVertex.size(); i++)
+		{
+			selectedEditable->setVertexData(operationRollbackVertex[i].vertexID, operationRollbackVertex[i].data);
 		}
 	}
-	operationRollback.clear();
+	printf("amogus2\n");
+	operationRollbackObject.clear();
+	operationRollbackVertex.clear();
 	currentOperation = Operation::NONE;
 }
 
@@ -609,6 +662,12 @@ void processOperation(int dX, int dY)
 			vd.position = vd.position + delta3;
 			selectedEditable->setVertexData(selectedVertexIDs[i], vd);
 		}
+		break;
+
+	case Operation::MOVE_OBJECT:
+		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		selectedEditable->setPosition(selectedEditable->getPosition() + delta3);
+		selectedEditable->recalculateGlobalMatrix();
 		break;
 	}
 }

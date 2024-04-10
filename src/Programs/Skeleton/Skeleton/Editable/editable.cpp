@@ -46,9 +46,9 @@ Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int ver
 	this->indices.assign(indices, indices + indexCount);
 
 	localPosition = vec3(0);
-	localScale = vec3(1);
+	localScale = vec3(1,1,1);
 	localRotation = vec3(0);
-	globalModelMatrix = mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+	globalModelMatrix = calculateLocalMatrix();
 
 	parent = NULL;
 
@@ -68,16 +68,20 @@ Editable::~Editable()
 
 mat4 Editable::calculateLocalMatrix()
 {
-	mat4 local = mat4(localScale.x, 0, 0, 0, 0, localScale.y, 0, 0, 0, 0, localScale.z, 0, localPosition.x, localPosition.y, localPosition.z, 1);
+	mat4 local = ScaleMatrix(localScale)*TranslateMatrix(localPosition);
 	//add the rotation later
 	return local;
 }
 
-void Editable::recalculateGlobalMatrix(const mat4& parentGlobalModel)
+void Editable::recalculateGlobalMatrix()
 {
-	this->globalModelMatrix = calculateLocalMatrix() * parentGlobalModel;
+	if(parent==NULL)
+		this->globalModelMatrix = calculateLocalMatrix();
+	else
+		this->globalModelMatrix = calculateLocalMatrix()*parent->globalModelMatrix;
+
 	for (int i = 0; i < this->children.size(); i++)
-		this->children[i]->recalculateGlobalMatrix(this->globalModelMatrix);
+		this->children[i]->recalculateGlobalMatrix();
 }
 
 void Editable::setParent(Editable* parent)
@@ -148,6 +152,33 @@ unsigned int Editable::getAlbedo()
 const char* Editable::getAlbedoPath()
 {
 	return this->albedoPath;
+}
+
+vec3 Editable::getPosition()
+{
+	return this->localPosition;
+}
+void Editable::setPosition(const vec3& position)
+{
+	this->localPosition = position;
+}
+
+vec3 Editable::getRotation()
+{
+	return this->localRotation;
+}
+void Editable::setRotation(const vec3& rotation)
+{
+	this->localRotation = rotation;
+}
+
+vec3 Editable::getScale()
+{
+	return this->localScale;
+}
+void Editable::setScale(const vec3& scale)
+{
+	this->localScale = scale;
 }
 
 
