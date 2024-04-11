@@ -21,7 +21,8 @@
 
 enum Operation {
 	NONE,
-	MOVE_OBJECT, MOVE_VERTEX, MOVE_VERTEX_UV
+	MOVE_OBJECT, MOVE_VERTEX, MOVE_VERTEX_UV,
+	SCALE_OBJECT,
 };
 
 class OperationRollbackItemObject {
@@ -69,7 +70,8 @@ layout_t currentLayout = Layout::NONE;
 int currentOperation = Operation::NONE;
 std::vector<OperationRollbackItemObject> operationRollbackObject;
 std::vector<OperationRollbackItemVertex> operationRollbackVertex;
-float operationHelper1; vec2 operationHelper2; vec3 operationHelper3;
+float operationHelper11; vec2 operationHelper21; vec3 operationHelper31;
+float operationHelper12; vec2 operationHelper22; vec3 operationHelper32;
 
 void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
@@ -177,6 +179,27 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			case Layout::UV:
 				if (selectedVertexIDs.size() != 0)
 					startOperation(Operation::MOVE_VERTEX_UV);
+				break;
+			}
+			break;
+
+		case 's':
+			switch (Layout::getLayoutByMousePos(pX, pY))
+			{
+			case Layout::OBJECT:
+				if (showVertices == 0)//object mode
+				{
+					if (selectedEditable != NULL)
+						startOperation(Operation::SCALE_OBJECT);
+				}
+				else//edit mode
+				{
+
+				}
+				break;
+
+			case Layout::UV:
+
 				break;
 			}
 			break;
@@ -617,6 +640,23 @@ void startOperation(Operation op)
 		operationRollbackVertex.push_back(OperationRollbackItemVertex(vertices[selectedVertexIDs[i]], selectedVertexIDs[i]));
 
 	currentOperation = op;
+
+	//helpers
+	int pX, pY;
+	System::getMousePosition(&pX, &pY);
+
+	vec2 bottomLeft, topRight;
+	switch (currentOperation)
+	{
+	case SCALE_OBJECT:
+		Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
+		bottomLeft = System::convertScreenToGl(bottomLeft);
+		topRight = System::convertScreenToGl(topRight);
+		vec4 temp = vec4(0, 0, 0, 1) * selectedEditable->getGlobalMatrix()*cam.getViewMatrix()* PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+		operationHelper21 = bottomLeft+vec2((topRight.x-bottomLeft.x)*temp.x / temp.w, (topRight.y - bottomLeft.y) * temp.y / temp.w);//position of object on screen
+		operationHelper22 = vec2(pX, pY);
+		break;
+	}
 }
 
 void endOperation(int discard)
@@ -670,6 +710,12 @@ void processOperation(int dX, int dY)
 		break;
 
 	case Operation::MOVE_OBJECT:
+		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		selectedEditable->setPosition(selectedEditable->getPosition() + delta3);
+		selectedEditable->recalculateGlobalMatrix();
+		break;
+
+	case Operation::SCALE_OBJECT:
 		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
 		selectedEditable->setPosition(selectedEditable->getPosition() + delta3);
 		selectedEditable->recalculateGlobalMatrix();
