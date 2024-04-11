@@ -13,7 +13,7 @@
 
 static int editablesCreated = 0;
 
-static GPUProgram program3D, program2D, program2DRectangle;
+static GPUProgram program3D, program3DUnlit, program2D, program2DRectangle;
 static unsigned int rectangleVAO, rectangleVBO;
 static float rectangleVBOContent[] = { 0,0,1,0,1,1,1,1,0,1,0,0 };
 
@@ -212,6 +212,12 @@ void Editable::initialize()
 		"./assets/shaders/render3D/shader_3d.vag",
 		"./assets/shaders/render3D/shader_3d.fag",
 		"fragColour",
+		"./assets/shaders/render3D/shader_3d.gag");
+
+	program3DUnlit.createFromFile(
+		"./assets/shaders/render3D/shader_3d_unlit.vag",
+		"./assets/shaders/render3D/shader_3d_unlit.fag",
+		"fragColour",
 		nullptr);
 
 	program2D.createFromFile("./assets/shaders/render2D/shader_2d.vag",
@@ -341,9 +347,16 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 	program3D.setUniform(camera.getViewMatrix(), "view");
 	program3D.setUniform(0, "tex");
 	program3D.setUniform(vec3(0), "colour");
+	program3D.setUniform(normalize(vec3(0.6f, 1.0f, 0.8f)), "lightDirNormalized");
+
+	program3DUnlit.Use();
+	program3DUnlit.setUniform(projection, "projection");
+	program3DUnlit.setUniform(camera.getViewMatrix(), "view");
+	program3DUnlit.setUniform(vec3(0), "colour");
 
 	for (int i = 0; i < Editable::edibles.size(); i++)
 	{
+		program3D.Use();
 		program3D.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
 		glBindVertexArray(Editable::edibles[i]->vao);
 
@@ -368,14 +381,17 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 		if (showVertices == 0 || Editable::edibles[i] != selectedEditable)
 			continue;
 
-		program3D.setUniform(0, "isSampled");
 
-		program3D.setUniform(vec3(0, 0, 1), "colour");
+		program3DUnlit.Use();
+
+		program3DUnlit.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
+
+		program3DUnlit.setUniform(vec3(0, 0, 1), "colour");
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		program3D.setUniform(vec3(1, 0.85f, 0), "colour");
+		program3DUnlit.setUniform(vec3(1, 0.85f, 0), "colour");
 		glDrawElements(GL_POINTS, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 	}
 
@@ -385,9 +401,10 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 	//render selected
 	if (selectedEditable != NULL && selectedVertexIDs.size()!=0)
 	{
-		program3D.setUniform(0, "isSampled");
-		program3D.setUniform(vec3(1, 0, 0), "colour");
-		program3D.setUniform(selectedEditable->globalModelMatrix, "model");
+		program3DUnlit.Use();
+
+		program3DUnlit.setUniform(vec3(1, 0, 0), "colour");
+		program3DUnlit.setUniform(selectedEditable->globalModelMatrix, "model");
 		glBindVertexArray(selectedEditable->vao);
 		
 		for (int i = 0; i < selectedVertexIDs.size(); i++)

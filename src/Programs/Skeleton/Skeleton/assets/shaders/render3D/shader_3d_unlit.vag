@@ -4,7 +4,6 @@ layout (location=0) in vec3 aPos;
 layout (location=1) in vec2 aUV;
 
 out vec2 uv;
-out vec3 pos;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -13,7 +12,5 @@ uniform mat4 projection;
 void main()
 {
 	uv=aUV;
-	gl_Position=vec4(aPos.xyz,1)*model;
-	pos=gl_Position.xyz;
-	gl_Position=gl_Position*view*projection;
+	gl_Position=vec4(aPos.xyz,1)*model*view*projection;
 }

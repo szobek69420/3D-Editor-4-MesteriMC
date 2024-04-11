@@ -1,17 +1,19 @@
 #version 330 core
 
-in vec2 uv;
-in vec3 pos;
+in vec2 uv_frag;
+in vec3 normal;
 
 out vec4 fragColour;
 
 uniform int isSampled;
 uniform sampler2D tex;
 uniform vec3 colour;
+uniform vec3 lightDirNormalized;
 
 void main()
 {
 	fragColour=vec4(colour,1);
 	if(isSampled!=0)
-		fragColour*=texture(tex, uv);
+		fragColour*=texture(tex, uv_frag);
+	fragColour*=0.5*dot(lightDirNormalized, normal)+0.5;
 }

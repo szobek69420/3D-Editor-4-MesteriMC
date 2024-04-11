@@ -481,14 +481,19 @@ void selectObject3D(int pX, int pY)
 		const std::vector<VertexData>& vertices = editablesInScene[j]->getVertices();
 		const std::vector<unsigned int>& indices = editablesInScene[j]->getIndices();
 
+		mat4 mvp = editablesInScene[j]->getGlobalMatrix()*vp;
+
 		for (int i = 0; i < indices.size(); i += 3)
 		{
-			vec4 a4 = vertices[indices[i]].position*vp, b4 = vertices[indices[i + 1]].position*vp, c4 = vertices[indices[i + 2]].position*vp;
+			vec4 a4 = vertices[indices[i]].position*mvp, b4 = vertices[indices[i + 1]].position*mvp, c4 = vertices[indices[i + 2]].position*mvp;
 			vec3 a = a4, b = b4, c = c4;
-			a = a / a4.w; b = b / b4.w; c = c / c4.w;
+
 			float avgZ = 0.3333f * (a.z + b.z + c.z);
 			if (avgZ < 0)
 				continue;
+
+			a = a / a4.w; b = b / b4.w; c = c / c4.w;//perspective division
+		
 
 			a.z = 0; b.z = 0; c.z = 0;
 			int positives = 0;
