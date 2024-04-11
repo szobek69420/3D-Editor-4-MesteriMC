@@ -33,6 +33,7 @@ void Grid::render(unsigned int count, const vec2& bottomLeft, const vec2& topRig
 	glLineWidth(1);
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
 	mat4 vp = cum.getViewMatrix() * PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
 
@@ -50,8 +51,20 @@ void Grid::render(unsigned int count, const vec2& bottomLeft, const vec2& topRig
 	shader.setUniform(vec3(-69, start, Grid::step), "info");
 	glDrawArraysInstanced(GL_LINES, 0, 2, count);
 
+	//fotengelyek
+	glLineWidth(2);
+
+	shader.setUniform(vec3(1,0,0), "colour");
+	shader.setUniform(vec3(69, 0, 1), "info");
+	glDrawArraysInstanced(GL_LINES, 0, 2,1);
+
+	shader.setUniform(vec3(0,0,1), "colour");
+	shader.setUniform(vec3(-69, 0, 1), "info");
+	glDrawArraysInstanced(GL_LINES, 0, 2, 1);
+
 	glBindVertexArray(0);
 
+	glDepthFunc(GL_LESS);
 	glDisable(GL_DEPTH_TEST);
 }
 
