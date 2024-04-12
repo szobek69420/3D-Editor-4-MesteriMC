@@ -148,5 +148,6 @@
     <None Include="assets\shaders\render3D\shader_3d.gag" />
     <None Include="assets\shaders\render3D\shader_3d_unlit.fag" />
     <None Include="assets\shaders\render3D\shader_3d_unlit.vag" />
+    <None Include="assets\shaders\grid\shader_grid_axis.vag" />
   </ItemGroup>
 </Project>

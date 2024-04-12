@@ -2,13 +2,18 @@
 
 #include <math.h>
 
+#include "../framework.h"
+
 Camera::Camera()
 {
 	position = vec3(0);
 	yaw = 0;
 	pitch = 0;
-
 	refreshViewMatrix();
+
+	clipNear = 0.1f;
+	clipFar = 100.0f;
+	fov = 60;
 }
 
 void Camera::refreshViewMatrix()
@@ -42,6 +47,11 @@ const mat4& Camera::getViewMatrix() const
 	return viewMatrix;
 }
 
+mat4 Camera::getPerspective(float aspectXY) const
+{
+	return PerspectiveMatrix(this->fov, aspectXY, this->clipNear, this->clipFar);
+}
+
 vec3 Camera::getDirection() const
 {
 	vec3 direction = vec3(
@@ -65,16 +75,12 @@ vec3 Camera::getUp() const
 	return up;
 }
 
-
-//static part
-float Camera::fov = 60;
-
-float Camera::getFov()
+float Camera::getFov() const
 {
-	return Camera::fov;
+	return this->fov;
 }
 
 void Camera::setFov(float fov)
 {
-	Camera::fov = fov;
+	this->fov = fov;
 }

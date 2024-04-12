@@ -1,0 +1,10 @@
+#version 330 core
+uniform vec3 info;//isXdir, based, width
+uniform mat4 vp;
+void main()
+{
+	if(info.x>0) gl_Position=vec4(info.y,0,info.z-gl_VertexID*2*info.z,1);
+	else gl_Position=vec4(info.z-gl_VertexID*2*info.z,0,info.y,1);
+	gl_Position=gl_Position*vp;
+	gl_Position=gl_Position.xyww;
+}

@@ -120,6 +120,7 @@
     <None Include="assets\shaders\grid\shader_grid.fag" />
     <None Include="assets\shaders\grid\shader_grid.vag" />
     <None Include="assets\shaders\grid\shader_grid_2.vag" />
+    <None Include="assets\shaders\grid\shader_grid_axis.vag" />
     <None Include="assets\shaders\render2D\shader_2d.fag" />
     <None Include="assets\shaders\render2D\shader_2d.vag" />
     <None Include="assets\shaders\render2D\shader_2d_rectangle.fag" />

@@ -1,7 +1,7 @@
 #include "grid.h"
 #include "../framework.h"
 
-static GPUProgram shader;
+static GPUProgram shader, shaderAxis;
 static unsigned int vao=0, vbo=0;
 
 vec3 Grid::colour = vec3(0.3f, 0.3f, 0.3f);
@@ -10,6 +10,7 @@ float Grid::step = 1;
 void Grid::initialize()
 {
 	shader.createFromFile("./assets/shaders/grid/shader_grid.vag", "./assets/shaders/grid/shader_grid.fag", "fragColour", NULL);
+	shaderAxis.createFromFile("./assets/shaders/grid/shader_grid_axis.vag", "./assets/shaders/grid/shader_grid.fag", "fragColour", NULL);
 
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
@@ -54,12 +55,15 @@ void Grid::render(unsigned int count, const vec2& bottomLeft, const vec2& topRig
 	//fotengelyek
 	glLineWidth(2);
 
-	shader.setUniform(vec3(1,0,0), "colour");
-	shader.setUniform(vec3(69, 0, 1), "info");
+	shaderAxis.Use();
+	shaderAxis.setUniform(vp, "vp");
+
+	shaderAxis.setUniform(vec3(1,0,0), "colour");
+	shaderAxis.setUniform(vec3(69, 0, start), "info");
 	glDrawArraysInstanced(GL_LINES, 0, 2,1);
 
-	shader.setUniform(vec3(0,0,1), "colour");
-	shader.setUniform(vec3(-69, 0, 1), "info");
+	shaderAxis.setUniform(vec3(0,0,1), "colour");
+	shaderAxis.setUniform(vec3(-69, 0, start), "info");
 	glDrawArraysInstanced(GL_LINES, 0, 2, 1);
 
 	glBindVertexArray(0);

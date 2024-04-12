@@ -340,7 +340,7 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 	glPointSize(5);
 	glLineWidth(2);
 
-	mat4 projection = PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+	mat4 projection = camera.getPerspective((topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y));
 
 	program3D.Use();
 	program3D.setUniform(projection, "projection");
@@ -438,7 +438,7 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 		glDisable(GL_DEPTH_TEST);
 
 		program3DUnlit.Use();
-		program3DUnlit.setUniform(selectedEditable->globalModelMatrix*ScaleMatrix(vec3(1.02f, 1.02f, 1.02f)), "model");
+		program3DUnlit.setUniform(ScaleMatrix(vec3(1.02f, 1.02f, 1.02f))*selectedEditable->globalModelMatrix, "model");
 		program3DUnlit.setUniform(vec3(0,1,1), "colour");
 
 		glDrawElements(GL_TRIANGLES, selectedEditable->indices.size(), GL_UNSIGNED_INT, NULL);

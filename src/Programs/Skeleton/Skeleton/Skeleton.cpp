@@ -22,7 +22,7 @@
 enum Operation {
 	NONE,
 	MOVE_OBJECT, MOVE_VERTEX, MOVE_VERTEX_UV,
-	SCALE_OBJECT,
+	SCALE_OBJECT, SCALE_VERTEX, SCALE_VERTEX_UV
 };
 
 class OperationRollbackItemObject {
@@ -138,9 +138,12 @@ void onDisplay() {
 		bottomLeft = System::convertScreenToGl(bottomLeft);
 		topRight = System::convertScreenToGl(topRight);
 
+		float stepSize = powf(10, floorf(log10f(0.5f*length(cam.getPosition() - camOrigin))));
+		if (stepSize < 1)
+			stepSize = 1;
+		Grid::setStepSize(stepSize);
 		Grid::setColour(0.3f, 0.3f, 0.3f);
-		Grid::setStepSize(1);
-		Grid::render(200, bottomLeft, topRight, cam, -100);
+		Grid::render(200, bottomLeft, topRight, cam, -100*stepSize);
 		Editable::render3D(cam, bottomLeft, topRight, showVertices);
 	}
 	if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
@@ -194,12 +197,14 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 				}
 				else//edit mode
 				{
-
+					if (selectedVertexIDs.size()  > 1)
+						startOperation(Operation::SCALE_VERTEX);
 				}
 				break;
 
 			case Layout::UV:
-
+				if (selectedVertexIDs.size() > 1)
+					startOperation(Operation::SCALE_VERTEX_UV);
 				break;
 			}
 			break;
@@ -429,13 +434,13 @@ void selectPoint3D(int pX, int pY, int append)
 		2.0f * (pX - bottomLeft.x) / (topRight.x - bottomLeft.x) - 1,
 		2.0f * (pY - topRight.y) / (bottomLeft.y- topRight.y) - 1);
 
-	float szam = sinf(0.01745329252f * 0.5f*Camera::getFov());
+	float szam = sinf(0.01745329252f * 0.5f*cam.getFov());
 	float szam2 = (topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y);
 
 	ndc.x *= szam*szam2;
 	ndc.y *= szam*(-1);
 
-	vec3 raycastDir = normalize(vec3(ndc.x, ndc.y, -cosf(0.01745329252f * 0.5f*Camera::getFov())));
+	vec3 raycastDir = normalize(vec3(ndc.x, ndc.y, -cosf(0.01745329252f * 0.5f*cam.getFov())));
 	mat4 mv = selectedEditable->getGlobalMatrix()*cam.getViewMatrix();
 	const std::vector<VertexData>& vertices = selectedEditable->getVertices();
 
@@ -495,7 +500,7 @@ void selectObject3D(int pX, int pY)
 		-2.0f * (pY - topRight.y) / (bottomLeft.y - topRight.y) + 1,
 		0);
 
-	mat4 vp = cam.getViewMatrix()*PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y), 0.01f, 100.0f);
+	mat4 vp = cam.getViewMatrix()*cam.getPerspective((topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y));
 
 
 	int closest = -1;
@@ -650,13 +655,69 @@ void startOperation(Operation op)
 	switch (currentOperation)
 	{
 	case SCALE_OBJECT:
-		Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
-		bottomLeft = System::convertScreenToGl(bottomLeft);
-		topRight = System::convertScreenToGl(topRight);
-		vec4 temp = vec4(0, 0, 0, 1) * selectedEditable->getGlobalMatrix()*cam.getViewMatrix()* PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
-		operationHelper21 = bottomLeft+vec2((topRight.x-bottomLeft.x)*(0.5f*temp.x / temp.w +0.5f), (topRight.y - bottomLeft.y) * (0.5f*temp.y / temp.w+0.5f));//position of object on screen
-		operationHelper22 = vec2(pX, pY);
-		operationHelper31 = selectedEditable->getScale();
+		//operationHelper21: the screen space position of the center of the object
+		//operationHelper22: the mouse position in screen space at the start of the operation
+		//operationHelper31: the initial scale of the object
+
+		do {
+			Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
+			bottomLeft = System::convertScreenToGl(bottomLeft);
+			topRight = System::convertScreenToGl(topRight);
+			vec4 temp = vec4(0, 0, 0, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
+			operationHelper22 = vec2(pX, pY);
+			operationHelper31 = selectedEditable->getScale();
+		} while (0);
+		break;
+
+	case SCALE_VERTEX:
+		//operationHelper21: the screen space position of the center of the selected vertices
+		//operationHelper22: the mouse position in screen space at the start of the operation
+		//operationHelper31: the position of the center of the selected vertices in model space (so that it doesn't need to be calculated every time)
+
+		do {
+			Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
+			bottomLeft = System::convertScreenToGl(bottomLeft);
+			topRight = System::convertScreenToGl(topRight);
+
+			//the center of the selected vertices
+			operationHelper31 = vec3();
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+				operationHelper31 = operationHelper31 + operationRollbackVertex[i].data.position;
+			operationHelper31 = operationHelper31 / (float)operationRollbackVertex.size();
+
+			//mouse positions
+			vec4 temp = vec4(operationHelper31, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
+			operationHelper22 = vec2(pX, pY);
+		} while (0);
+		break;
+
+	case SCALE_VERTEX_UV:
+		//operationHelper21: the screen space position of the center of the selected vertices
+		//operationHelper22: the mouse position in screen space at the start of the operation
+		//operationHelper31: the position of the center of the selected vertices in model space (so that it doesn't need to be calculated every time)
+
+		do {
+			Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight);
+			bottomLeft = System::convertScreenToGl(bottomLeft);
+			topRight = System::convertScreenToGl(topRight);
+
+			float aspectXY = (topRight.x - bottomLeft.x) / (topRight.y-bottomLeft.y);
+			mat4 vp = cam2D.getViewMatrix() * OrthoMatrix(-0.5f * aspectXY * cam2Dzoom, 0.5f * aspectXY * cam2Dzoom, -0.5f * cam2Dzoom, 0.5f * cam2Dzoom, 0, 10.0f);
+			
+			//the center of the selected vertices
+			operationHelper31 = vec3();
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+				operationHelper31 = operationHelper31 + operationRollbackVertex[i].data.uv;
+			operationHelper31 = operationHelper31 / (float)operationRollbackVertex.size();
+	
+
+			//mouse positions
+			vec4 temp = vec4(operationHelper31, 1) * vp;
+			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
+			operationHelper22 = vec2(pX, pY);
+		} while (0);
 		break;
 	}
 }
@@ -723,11 +784,48 @@ void processOperation(int dX, int dY)
 		break;
 
 	case Operation::SCALE_OBJECT:
-		float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
-		if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
-			ratio *= -1;
-		selectedEditable->setScale(ratio*operationHelper31);
-		selectedEditable->recalculateGlobalMatrix();
+		do {
+			float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
+			if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
+				ratio *= -1;
+			selectedEditable->setScale(ratio * operationHelper31);
+			selectedEditable->recalculateGlobalMatrix();
+		} while (0);
+		break;
+
+	case Operation::SCALE_VERTEX:
+		do {
+			float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
+			if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
+				ratio *= -1;
+
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+			{
+				vec3 newVertexPos = ratio*(operationRollbackVertex[i].data.position-operationHelper31)+operationHelper31;
+				selectedEditable->setVertexData(
+					operationRollbackVertex[i].vertexID,
+					VertexData(newVertexPos, operationRollbackVertex[i].data.uv)
+				);
+			}
+		} while (0);
+		break;
+
+	case Operation::SCALE_VERTEX_UV:
+		do {
+			float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
+			if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
+				ratio *= -1;
+
+			vec2 center = vec2(operationHelper31.x, operationHelper31.y);
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+			{
+				vec2 newVertexUv = ratio * (operationRollbackVertex[i].data.uv - center) + center;
+				selectedEditable->setVertexData(
+					operationRollbackVertex[i].vertexID,
+					VertexData(operationRollbackVertex[i].data.position,newVertexUv)
+				);
+			}
+		} while (0);
 		break;
 	}
 }
