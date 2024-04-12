@@ -87,6 +87,7 @@
     <ClCompile Include="ImGui\imgui_tables.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Layout\layout.cpp" />
+    <ClCompile Include="OrientationIcon\orientation_icon.cpp" />
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="System\system.cpp" />
     <ClCompile Include="TextureLoader\stb_image.cpp" />
@@ -110,6 +111,7 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Layout\layout.h" />
+    <ClInclude Include="OrientationIcon\orientation_icon.h" />
     <ClInclude Include="System\system.h" />
     <ClInclude Include="TextureLoader\stb_image.h" />
     <ClInclude Include="TextureLoader\texture_loader.h" />
@@ -121,6 +123,8 @@
     <None Include="assets\shaders\grid\shader_grid.vag" />
     <None Include="assets\shaders\grid\shader_grid_2.vag" />
     <None Include="assets\shaders\grid\shader_grid_axis.vag" />
+    <None Include="assets\shaders\orientation\shader_orientation.fag" />
+    <None Include="assets\shaders\orientation\shader_orientation.vag" />
     <None Include="assets\shaders\render2D\shader_2d.fag" />
     <None Include="assets\shaders\render2D\shader_2d.vag" />
     <None Include="assets\shaders\render2D\shader_2d_rectangle.fag" />

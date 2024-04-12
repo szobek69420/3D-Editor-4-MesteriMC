@@ -7,6 +7,9 @@
 
 #include "../../Layout/layout.h"
 
+#include "../../framework.h"
+
+
 int Header::currentLocalList = Header::LocalList::NONE;
 ImVec2 Header::localListPos = ImVec2();
 
@@ -117,8 +120,11 @@ void Header::render()
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
 
-		ImGui::Button("Object mode");
-		ImGui::Button("Edit mode");
+		if (ImGui::Button("Object mode")|| ImGui::Button("Edit mode"))
+		{
+			currentLocalList = Header::LocalList::NONE;
+
+		}
 
 		ImGui::PopStyleColor(3);
 

@@ -72,6 +72,9 @@
     <ClCompile Include="Grid\grid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OrientationIcon\orientation_icon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -134,6 +137,9 @@
     <ClInclude Include="Grid\grid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OrientationIcon\orientation_icon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\render3D\shader_3d.vag" />
@@ -149,5 +155,7 @@
     <None Include="assets\shaders\render3D\shader_3d_unlit.fag" />
     <None Include="assets\shaders\render3D\shader_3d_unlit.vag" />
     <None Include="assets\shaders\grid\shader_grid_axis.vag" />
+    <None Include="assets\shaders\orientation\shader_orientation.vag" />
+    <None Include="assets\shaders\orientation\shader_orientation.fag" />
   </ItemGroup>
 </Project>

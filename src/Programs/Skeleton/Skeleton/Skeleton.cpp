@@ -13,6 +13,7 @@
 
 #include "Layout/layout.h"
 #include "Grid/grid.h"
+#include "OrientationIcon/orientation_icon.h"
 
 #include "Editable/editable.h"
 
@@ -108,6 +109,7 @@ void onInitialization() {
 	io.DisplaySize = ImVec2(windowWidth, windowHeight);
 
 	Grid::initialize();
+	OrientationIcon::initialize();
 
 	Layout::setLayout(Layout::Preset::Object);
 
@@ -120,6 +122,7 @@ void onInitialization() {
 void onDeinitialization()
 {
 	Grid::deinitialize();
+	OrientationIcon::deinitialize();
 	Editable::deinitialize();
 	ImGuiLoader::destroy();
 }
@@ -145,6 +148,9 @@ void onDisplay() {
 		Grid::setColour(0.3f, 0.3f, 0.3f);
 		Grid::render(200, bottomLeft, topRight, cam, -100*stepSize);
 		Editable::render3D(cam, bottomLeft, topRight, showVertices);
+
+		if (topRight.x - bottomLeft.x > 100 && topRight.y - bottomLeft.y > 100)
+			OrientationIcon::render(cam, topRight - vec2(80, 80), topRight - vec2(20, 20));
 	}
 	if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
 		Editable::render2D(cam2D, System::convertScreenToGl(bottomLeft), System::convertScreenToGl(topRight), cam2Dzoom);
@@ -558,9 +564,17 @@ void scroll2D(int deltaScroll)
 	cam2Dzoom *=  powf(SENSITIVITY_SCROLL_2D, deltaScroll);
 
 	if (cam2D.getPosition().z < 0.01f)
-		cam2D.getPosition().z = 0.11f;
+	{
+		vec3 temp = cam2D.getPosition();
+		temp.z = 0.11f;
+		cam2D.setPosition(temp);
+	}
 	else if (cam2D.getPosition().z > 99.0f)
-		cam2D.getPosition().z = 99.0f;
+	{
+		vec3 temp = cam2D.getPosition();
+		temp.z = 99.0f;
+		cam2D.setPosition(temp);
+	}
 
 	cam2D.refreshViewMatrix();
 }

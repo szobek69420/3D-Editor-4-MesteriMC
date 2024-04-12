@@ -58,11 +58,11 @@ void Grid::render(unsigned int count, const vec2& bottomLeft, const vec2& topRig
 	shaderAxis.Use();
 	shaderAxis.setUniform(vp, "vp");
 
-	shaderAxis.setUniform(vec3(1,0,0), "colour");
+	shaderAxis.setUniform(vec3(0,0,1), "colour");
 	shaderAxis.setUniform(vec3(69, 0, start), "info");
 	glDrawArraysInstanced(GL_LINES, 0, 2,1);
 
-	shaderAxis.setUniform(vec3(0,0,1), "colour");
+	shaderAxis.setUniform(vec3(1,0,0), "colour");
 	shaderAxis.setUniform(vec3(-69, 0, start), "info");
 	glDrawArraysInstanced(GL_LINES, 0, 2, 1);
 

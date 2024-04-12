@@ -6,10 +6,10 @@
 
 class OrientationIcon {
 public:
-	void initialize();
-	void deinitialize();
+	static void initialize();
+	static void deinitialize();
 
-	void render(const Camera& cum, vec2 bottomLeft, vec2 topRight);
+	static void render(const Camera& cum, vec2 bottomLeft, vec2 topRight);
 };
 
 #endif

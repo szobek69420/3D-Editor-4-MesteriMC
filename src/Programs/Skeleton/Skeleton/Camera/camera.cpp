@@ -22,7 +22,7 @@ void Camera::refreshViewMatrix()
 	viewMatrix = LookAtMatrix(position, direction, vec3(0, 1, 0));
 }
 
-vec3& Camera::getPosition()
+vec3 Camera::getPosition() const
 {
 	return position;
 }
