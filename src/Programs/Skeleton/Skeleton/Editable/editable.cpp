@@ -373,14 +373,10 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 			program3D.setUniform(vec3(0.5f,0.5f,0.5f), "colour");
 		}
 
-		if(Editable::edibles[i]==selectedEditable)//highlight colour
-			program3D.setUniform(vec3(0, 1, 1), "colour");
-
 		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 
-		if (showVertices == 0 || Editable::edibles[i] != selectedEditable)
+		if (showVertices==0||Editable::edibles[i] != selectedEditable)
 			continue;
-
 
 		program3DUnlit.Use();
 
@@ -397,22 +393,60 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 
 	glDepthFunc(GL_LESS);
 	glDisable(GL_DEPTH_TEST);
-
-	//render selected
-	if (selectedEditable != NULL && selectedVertexIDs.size()!=0)
+	
+	if (selectedEditable != NULL && showVertices!=0&&selectedVertexIDs.size() != 0)//render selected points
 	{
 		program3DUnlit.Use();
 
 		program3DUnlit.setUniform(vec3(1, 0, 0), "colour");
 		program3DUnlit.setUniform(selectedEditable->globalModelMatrix, "model");
 		glBindVertexArray(selectedEditable->vao);
-		
+
 		for (int i = 0; i < selectedVertexIDs.size(); i++)
 		{
 			glDrawArrays(GL_POINTS, selectedVertexIDs[i], 1);
 		}
 	}
+	if (selectedEditable != NULL && showVertices == 0)//render object highlight
+	{
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_STENCIL_TEST);
 
+		glBindVertexArray(selectedEditable->vao);
+
+		//write stencil buffer
+		glStencilMask(0xFF);
+		glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+
+		program3D.Use();
+		program3D.setUniform(selectedEditable->globalModelMatrix, "model");
+		program3D.setUniform(selectedEditable->albedo != 0 ? 69 : 0, "isSampled");
+		program3D.setUniform(selectedEditable->albedo != 0 ? vec3(1, 1, 1): vec3(0.5f, 0.5f, 0.5f), "colour");
+		if (selectedEditable->albedo != 0){
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, selectedEditable->albedo);
+		}
+
+		glDrawElements(GL_TRIANGLES, selectedEditable->indices.size(), GL_UNSIGNED_INT, NULL);
+
+		//draw highlight
+		glStencilMask(0x00);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+
+		glDisable(GL_DEPTH_TEST);
+
+		program3DUnlit.Use();
+		program3DUnlit.setUniform(selectedEditable->globalModelMatrix*ScaleMatrix(vec3(1.02f, 1.02f, 1.02f)), "model");
+		program3DUnlit.setUniform(vec3(0,1,1), "colour");
+
+		glDrawElements(GL_TRIANGLES, selectedEditable->indices.size(), GL_UNSIGNED_INT, NULL);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glDisable(GL_STENCIL_TEST);
+	}
 
 	glBindVertexArray(0);
 	glUseProgram(0);

@@ -127,7 +127,7 @@ void onDeinitialization()
 // Window has become invalid: Redraw
 void onDisplay() {
 	glClearColor(0, 0, 0, 0);     // background color
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear frame buffer
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); // clear frame buffer
 
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
@@ -225,8 +225,8 @@ void onKeyboardUp(unsigned char key, int pX, int pY) {
 
 // Move mouse with key pressed
 void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
-	// ImGui mouse motion input processing
-	System::setMousePosition(pX, pY);
+	System::setMousePosition(pX, pY);//ez legyen az elso
+
 	ImGui_ImplGLUT_MotionFunc(pX, pY);
 
 	if (middleButtonDown && currentLayout == Layout::OBJECT)
@@ -248,10 +248,11 @@ void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the 
 
 void onMouseMotionWithoutClick(int pX, int pY)//this isnt called when onMouseMotion is
 {
+	System::setMousePosition(pX, pY);//ez legyen az elso
+
 	processOperation(pX - lastMouseX, pY - lastMouseY);
 
 
-	System::setMousePosition(pX, pY);
 	lastMouseX = pX;
 	lastMouseY = pY;
 	glutPostRedisplay();
@@ -653,8 +654,9 @@ void startOperation(Operation op)
 		bottomLeft = System::convertScreenToGl(bottomLeft);
 		topRight = System::convertScreenToGl(topRight);
 		vec4 temp = vec4(0, 0, 0, 1) * selectedEditable->getGlobalMatrix()*cam.getViewMatrix()* PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
-		operationHelper21 = bottomLeft+vec2((topRight.x-bottomLeft.x)*temp.x / temp.w, (topRight.y - bottomLeft.y) * temp.y / temp.w);//position of object on screen
+		operationHelper21 = bottomLeft+vec2((topRight.x-bottomLeft.x)*(0.5f*temp.x / temp.w +0.5f), (topRight.y - bottomLeft.y) * (0.5f*temp.y / temp.w+0.5f));//position of object on screen
 		operationHelper22 = vec2(pX, pY);
+		operationHelper31 = selectedEditable->getScale();
 		break;
 	}
 }
@@ -684,9 +686,14 @@ void endOperation(int discard)
 
 void processOperation(int dX, int dY)
 {
+	int pX, pY;
+	System::getMousePosition(&pX, &pY);
+
 	VertexData vd;
 	vec2 delta2;
 	vec3 delta3;
+	vec2 bottomLeft, topRight;
+	vec2 mouseNDC;
 	switch (currentOperation)
 	{
 	case Operation::MOVE_VERTEX_UV:
@@ -716,8 +723,10 @@ void processOperation(int dX, int dY)
 		break;
 
 	case Operation::SCALE_OBJECT:
-		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
-		selectedEditable->setPosition(selectedEditable->getPosition() + delta3);
+		float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
+		if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
+			ratio *= -1;
+		selectedEditable->setScale(ratio*operationHelper31);
 		selectedEditable->recalculateGlobalMatrix();
 		break;
 	}
