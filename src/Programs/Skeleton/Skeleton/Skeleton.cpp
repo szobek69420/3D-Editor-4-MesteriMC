@@ -494,7 +494,7 @@ void selectObject3D(int pX, int pY)
 		-2.0f * (pY - topRight.y) / (bottomLeft.y - topRight.y) + 1,
 		0);
 
-	mat4 vp = cam.getViewMatrix()*PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
+	mat4 vp = cam.getViewMatrix()*PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y), 0.01f, 100.0f);
 
 
 	int closest = -1;
@@ -508,7 +508,7 @@ void selectObject3D(int pX, int pY)
 
 		for (int i = 0; i < indices.size(); i += 3)
 		{
-			vec4 a4 = vertices[indices[i]].position*mvp, b4 = vertices[indices[i + 1]].position*mvp, c4 = vertices[indices[i + 2]].position*mvp;
+			vec4 a4 = vec4(vertices[indices[i]].position)*mvp, b4 = vec4(vertices[indices[i + 1]].position)*mvp, c4 = vec4(vertices[indices[i + 2]].position)*mvp;
 			vec3 a = a4, b = b4, c = c4;
 
 			float avgZ = 0.3333f * (a.z + b.z + c.z);
@@ -676,7 +676,7 @@ void endOperation(int discard)
 			selectedEditable->setVertexData(operationRollbackVertex[i].vertexID, operationRollbackVertex[i].data);
 		}
 	}
-	printf("amogus2\n");
+
 	operationRollbackObject.clear();
 	operationRollbackVertex.clear();
 	currentOperation = Operation::NONE;
