@@ -1,5 +1,7 @@
 #include "header.h"
 
+#include <vector>
+
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_loader.h"
 
@@ -7,9 +9,16 @@
 
 #include "../../Layout/layout.h"
 
-#include "../../framework.h"
+#include "../../Editable/editable.h"
 
+//externals
+void endOperation(int discard);
 
+extern Editable* selectedEditable;
+extern std::vector<unsigned int> selectedVertexIDs;
+extern int showVertices;
+
+//others
 int Header::currentLocalList = Header::LocalList::NONE;
 ImVec2 Header::localListPos = ImVec2();
 
@@ -120,10 +129,20 @@ void Header::render()
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
 
-		if (ImGui::Button("Object mode")|| ImGui::Button("Edit mode"))
+		if (ImGui::Button("Object mode"))
 		{
 			currentLocalList = Header::LocalList::NONE;
-
+			endOperation(69);
+			selectedVertexIDs.clear();
+			showVertices = 0;
+		}
+		if (ImGui::Button("Edit mode"))
+		{
+			currentLocalList = Header::LocalList::NONE;
+			endOperation(69);
+			selectedVertexIDs.clear();
+			if (selectedEditable != NULL)
+				showVertices = 1;
 		}
 
 		ImGui::PopStyleColor(3);

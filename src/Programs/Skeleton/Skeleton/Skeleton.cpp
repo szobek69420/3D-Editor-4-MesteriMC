@@ -272,10 +272,16 @@ void onMouseMotionWithoutClick(int pX, int pY)//this isnt called when onMouseMot
 
 // Mouse click event
 void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
+	ImGui_ImplGLUT_MouseFunc(button, state, pX, pY);
+	if (ImGui::GetIO().WantCaptureMouse)
+	{
+		glutPostRedisplay();
+		return;
+	}
+
+	
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
-
-	ImGui_ImplGLUT_MouseFunc(button, state, pX, pY);
 
 	switch (state)
 	{
