@@ -75,6 +75,9 @@
     <ClCompile Include="OrientationIcon\orientation_icon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ui\object_local\object_local_list.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -138,6 +141,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OrientationIcon\orientation_icon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\object_local\object_local_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

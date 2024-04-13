@@ -8,12 +8,17 @@ static unsigned int vao, vbo;
 static const mat4 projection = OrthoMatrix(-1, 1, -1, 1, -1, 1);
 
 static float vboData[] = {
+	//lines
 	1,0,0,	1,0,0,
 	0,0,0,	1,0,0,
 	0,1,0,	0,1,0,
 	0,0,0,	0,1,0,
 	0,0,1,	0,0,1,
-	0,0,0,	0,0,1
+	0,0,0,	0,0,1,
+	//points
+	1,0,0,	1,0.85f,0,
+	0,1,0,	1,0.85f,0,
+	0,0,1,	1,0.85f,0
 };
 
 void OrientationIcon::initialize()
@@ -50,6 +55,7 @@ void OrientationIcon::render(const Camera& cum, vec2 bottomLeft, vec2 topRight)
 	System::getWindowSize(&windowWidth, &windowHeight);
 
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
+	glPointSize(8);
 	glLineWidth(5);
 
 	mat4 mvp = TranslateMatrix(cum.getPosition()) * cum.getViewMatrix() * projection;
@@ -60,6 +66,7 @@ void OrientationIcon::render(const Camera& cum, vec2 bottomLeft, vec2 topRight)
 	glBindVertexArray(vao);
 
 	glDrawArrays(GL_LINES, 0, 6);
+	glDrawArrays(GL_POINTS, 6, 3);
 
 	glBindVertexArray(0);
 	glUseProgram(0);

@@ -460,6 +460,9 @@ void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float
 {
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
 
+	glPointSize(5);
+	glLineWidth(2);
+
 	float aspectXY = (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y);
 	mat4 projection = OrthoMatrix(-0.5f*aspectXY*zoom, 0.5f*aspectXY*zoom, -0.5f*zoom, 0.5f*zoom, 0,10);
 	

@@ -19,6 +19,7 @@
 
 #include "ui/header/header.h"
 #include "ui/uv_editor/uv_editor.h"
+#include "ui/object_local/object_local_list.h"
 
 enum Operation {
 	NONE,
@@ -89,6 +90,8 @@ void endOperation(int discard = 0);
 void processOperation(int dX, int dY);
 
 void ImguiFrame();
+
+void closeAllLocalLists();
 
 // Initialization, create an OpenGL context
 void onInitialization() {
@@ -220,6 +223,23 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			if(selectedEditable!=NULL)
 				showVertices = 1 - showVertices;
 			break;
+
+		case 'a':
+			switch (Layout::getLayoutByMousePos(pX, pY))
+			{
+			case Layout::OBJECT:
+			case Layout::UV:
+				if (showVertices == 1 && selectedEditable != NULL)
+				{
+					selectedVertexIDs.clear();
+					const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+					for (unsigned int i = 0; i < vertices.size(); i++)
+						selectedVertexIDs.push_back(i);
+				}
+				break;
+			}
+			
+			break;
 	}
 	
 
@@ -279,7 +299,9 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 		return;
 	}
 
-	
+	if(state==GLUT_DOWN)
+		closeAllLocalLists();
+
 	int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
 
@@ -312,18 +334,23 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		endOperation();
-		
-		if (showVertices == 0)//object mode
-			selectObject3D(pX, pY);
-		else//edit mode
-			selectPoint3D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
-
-		selectPoint2D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
+		if(currentOperation!=Operation::NONE)
+			endOperation();
+		else {
+			if (showVertices == 0)//object mode
+				selectObject3D(pX, pY);
+			else//edit mode
+			{
+				selectPoint3D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
+				selectPoint2D(pX, pY, glutGetModifiers() == GLUT_ACTIVE_SHIFT ? 69 : 0);
+			}
+		}
 	}
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
 		endOperation(69);
+		if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT)
+			ObjectLocalList::open(vec2(pX, pY));
 	}
 
 	glutPostRedisplay();
@@ -360,32 +387,6 @@ void onReshape(int width, int height)
 	Layout::refresh();
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2(width, height);
-}
-
-
-
-void ImguiFrame()
-{
-	int windowWidth, windowHeight;
-	System::getWindowSize(&windowWidth, &windowHeight);
-
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGLUT_NewFrame();
-	ImGui::NewFrame();
-
-	do {
-		Header::render();
-		Editable::renderHierarchy();
-
-		vec2 bottomLeft, topRight;
-		if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
-			UVEditor::render(bottomLeft, topRight);
-	} while (0);
-
-
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 }
 
 //3d functinos
@@ -848,4 +849,39 @@ void processOperation(int dX, int dY)
 		} while (0);
 		break;
 	}
+}
+
+
+//imgui stuff
+void closeAllLocalLists()
+{
+	ObjectLocalList::close();
+}
+
+void ImguiFrame()
+{
+	int windowWidth, windowHeight;
+	System::getWindowSize(&windowWidth, &windowHeight);
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGLUT_NewFrame();
+	ImGui::NewFrame();
+
+	do {
+		Header::render();
+		Editable::renderHierarchy();
+
+		vec2 bottomLeft, topRight;
+		if (Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight))
+			UVEditor::render(bottomLeft, topRight);
+
+		if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
+			ObjectLocalList::render(bottomLeft, topRight);
+
+	} while (0);
+
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 }
