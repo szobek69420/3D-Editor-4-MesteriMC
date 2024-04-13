@@ -39,7 +39,7 @@ void UVEditor::render(vec2 bottomLeft, vec2 topRight)
 		// Display the Open dialog box
 		if (GetOpenFileNameA(&open) == TRUE) {
 			UVEditor::ofn = open;
-			selectedEditable->setAlbedo(TextureLoader::load(ofn.lpstrFile, GL_LINEAR, 69), ofn.lpstrFile);
+			selectedEditable->setAlbedo(ofn.lpstrFile);
 		}
 	}
 
@@ -55,6 +55,6 @@ void UVEditor::render(vec2 bottomLeft, vec2 topRight)
 	ImGui::SameLine(190);
 	ImGui::SetNextItemWidth(30);
 	if (selectedEditable != NULL && ImGui::Button("X"))
-		selectedEditable->setAlbedo(0, "");
+		selectedEditable->setAlbedo("");
 	ImGui::End();
 }

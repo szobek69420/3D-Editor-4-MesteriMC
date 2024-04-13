@@ -11,6 +11,8 @@
 #include "../ui/header/header.h"
 #include "../Camera/camera.h"
 
+#include "../TextureLoader/texture_loader.h"
+
 static int editablesCreated = 0;
 
 static GPUProgram program3D, program3DUnlit, program2D, program2DRectangle;
@@ -63,7 +65,7 @@ Editable::~Editable()
 	glDeleteBuffers(1, &ebo);
 
 	if (this->albedo)
-		glDeleteTextures(1, &this->albedo);
+		Editable::releaseTexture(this->albedo);
 }
 
 mat4 Editable::calculateLocalMatrix()
@@ -137,12 +139,18 @@ mat4 Editable::getGlobalMatrix()
 }
 
 
-void Editable::setAlbedo(unsigned int texture, const char* albedoPath)
+void Editable::setAlbedo(const char* albedoPath)
 {
 	if (this->albedo != 0)
-		glDeleteTextures(1, &this->albedo);
-	this->albedo = texture;
-	strcpy_s(this->albedoPath, 200, albedoPath);
+		Editable::releaseTexture(this->albedo);
+
+	this->albedo = Editable::importTexture(albedoPath);
+	
+	//trim path
+	if (strlen(albedoPath) > 199)
+		strcpy(this->albedoPath, albedoPath + strlen(albedoPath) - 199);
+	else
+		strcpy(this->albedoPath, albedoPath);
 }
 unsigned int Editable::getAlbedo()
 {
@@ -204,6 +212,7 @@ static unsigned int presetIndices_Cube[] = {
 };
 
 std::vector<Editable*> Editable::edibles = std::vector<Editable*>();
+std::vector<EditableTexture> Editable::textures = std::vector<EditableTexture>();
 
 
 void Editable::initialize()
@@ -514,4 +523,74 @@ void Editable::render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float
 
 	glBindVertexArray(0);
 	glUseProgram(0);
+}
+
+
+//texture
+EditableTexture::EditableTexture(unsigned int texture, const char* path)
+{
+	this->texture = texture;
+	if (strlen(path) > 199)
+		strcpy(this->path, path + strlen(path) - 199);//stores the last 200 characters of the path, because that is what it identifies it
+	else
+		strcpy(this->path, path);
+	this->referenceCount = 1;
+}
+
+
+unsigned int Editable::importTexture(const char* path)
+{
+	static char pathKey[200];
+
+	if (strcmp(path, "") == 0)
+		return 0;
+
+	//trim input for the search
+	if (strlen(path) > 199)
+		strcpy(pathKey, path + strlen(path) - 199);
+	else
+		strcpy(pathKey, path);
+
+	//check if the texture is already loaded
+	for (int i = 0; i < Editable::textures.size(); i++)
+	{
+		if (strcmp(pathKey, Editable::textures[i].path) == 0)
+		{
+			Editable::textures[i].referenceCount++;
+			return Editable::textures[i].texture;
+		}
+	}
+
+	unsigned int newTex= TextureLoader::load(path, GL_LINEAR, 69);
+	if (newTex == 0)
+		return 0;
+
+	Editable::textures.push_back(EditableTexture(newTex, path));
+	return newTex;
+}
+
+void Editable::releaseTexture(unsigned int texture)
+{
+	int index = -1;
+
+	for (int i = 0; i < Editable::textures.size(); i++)
+	{
+		if (Editable::textures[i].texture == texture)
+		{
+			index = i;
+			break;
+		}
+	}
+
+	if (index == -1)
+		return;
+
+
+	Editable::textures[index].referenceCount--;
+
+	if (Editable::textures[index].referenceCount == 0)
+	{
+		glDeleteTextures(1, &Editable::textures[index].texture);
+		Editable::textures.erase(Editable::textures.begin() + index);
+	}
 }

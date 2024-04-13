@@ -14,6 +14,15 @@ public:
 	VertexData(vec3 _pos, vec2 _uv) :position(_pos), uv(_uv) {}
 };
 
+class EditableTexture {
+public:
+	unsigned int texture;
+	char path[200];
+	int referenceCount;
+
+	EditableTexture(unsigned int texture, const char* path);
+};
+
 class Editable {
 
 public:
@@ -58,7 +67,7 @@ public:
 
 	mat4 getGlobalMatrix();
 
-	void setAlbedo(unsigned int texture, const char* albedoPath = "");
+	void setAlbedo(const char* albedoPath = "");
 	unsigned int getAlbedo();
 	const char* getAlbedoPath();
 
@@ -74,6 +83,7 @@ public:
 	//static part
 private:
 	static std::vector<Editable*> edibles;
+	static std::vector<EditableTexture> textures;
 
 public:
 	static void initialize();
@@ -87,6 +97,9 @@ public:
 	static void renderHierarchy();
 	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices);
 	static void render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float zoom);
+
+	static unsigned int importTexture(const char* path);
+	static void releaseTexture(unsigned int texture);
 
 private:
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy

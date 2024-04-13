@@ -91,13 +91,21 @@ void ObjectLocalList::render(vec2 bottomLeft, vec2 topRight)
 		ImGui::SetNextWindowPos(ImVec2(currentPos.x + ObjectLocalList::width, currentPos.y));
 		ImGui::SetNextWindowSize(ImVec2(ObjectLocalList::width, 80));
 		ImGui::Begin("object_local_list_child", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
-		if (ImGui::Button("Cuba"))
-		{
+		if (ImGui::Button("Cuba")) {
 			Editable* edible = Editable::add(Editable::Preset::CUBE);
-			editablesInScene.push_back(edible);
+			if(edible!=NULL)
+				editablesInScene.push_back(edible);
 		}
-		if (ImGui::Button("Ball"));
-		if (ImGui::Button("Cylinder"));
+		if (ImGui::Button("Ball")) {
+			Editable* edible = Editable::add(Editable::Preset::SPHERE);
+			if (edible != NULL)
+				editablesInScene.push_back(edible);
+		}
+		if (ImGui::Button("Cylinder")) {
+			Editable* edible = Editable::add(Editable::Preset::CYLINDER);
+			if (edible != NULL)
+				editablesInScene.push_back(edible);
+		}
 		ImGui::End();
 		break;
 
@@ -105,9 +113,33 @@ void ObjectLocalList::render(vec2 bottomLeft, vec2 topRight)
 		ImGui::SetNextWindowPos(ImVec2(currentPos.x + ObjectLocalList::width, currentPos.y+22));
 		ImGui::SetNextWindowSize(ImVec2(ObjectLocalList::width, 80));
 		ImGui::Begin("object_local_list_child", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
-		if (ImGui::Button("Cuba"));
-		if (ImGui::Button("Ball"));
-		if (ImGui::Button("Cylinder"));
+		if (ImGui::Button("Cuba")) {
+			Editable* edible = Editable::add(Editable::Preset::CUBE);
+			if (edible != NULL)
+			{
+				edible->setPosition(-1 * selectedEditable->getPosition());
+				edible->setParent(selectedEditable);
+				editablesInScene.push_back(edible);
+			}
+		}
+		if (ImGui::Button("Ball")) {
+			Editable* edible = Editable::add(Editable::Preset::SPHERE);
+			if (edible != NULL)
+			{
+				edible->setPosition(-1 * selectedEditable->getPosition());
+				edible->setParent(selectedEditable);
+				editablesInScene.push_back(edible);
+			}
+		}
+		if (ImGui::Button("Cylinder")) {
+			Editable* edible = Editable::add(Editable::Preset::CYLINDER);
+			if (edible != NULL)
+			{
+				edible->setPosition(-1 * selectedEditable->getPosition());
+				edible->setParent(selectedEditable);
+				editablesInScene.push_back(edible);
+			}
+		}
 		ImGui::End();
 		break;
 	}
