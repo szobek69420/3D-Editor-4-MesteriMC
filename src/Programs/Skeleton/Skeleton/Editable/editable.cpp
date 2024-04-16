@@ -75,6 +75,20 @@ mat4 Editable::calculateLocalMatrix()
 	return local;
 }
 
+void Editable::refreshVertexBuffer()
+{
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexData), vertices.data(), GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Editable::refreshIndexBuffer()
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 void Editable::recalculateGlobalMatrix()
 {
 	if(parent==NULL)
@@ -187,6 +201,39 @@ vec3 Editable::getScale()
 void Editable::setScale(const vec3& scale)
 {
 	this->localScale = scale;
+}
+
+
+void Editable::addVertex(vec3 pos, vec2 uv)
+{
+	vertices.push_back(VertexData(pos, uv));
+	refreshVertexBuffer();
+}
+
+void Editable::removeVertex(unsigned int vertexID)
+{
+	vertices.erase(vertices.begin() + vertexID);
+
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		if (indices[i] == vertexID || indices[i + 1] == vertexID || indices[i + 2] == vertexID)//the face should be removed
+		{
+			indices.erase(indices.begin() + i, indices.begin() + i + 3);
+			i -= 3;
+		}
+		else //check if there are any indices that should be altered
+		{
+			if (indices[i] > vertexID)
+				indices[i]--;
+			if (indices[i + 1] > vertexID)
+				indices[i + 1]--;
+			if (indices[i + 2] > vertexID)
+				indices[i + 2]--;
+		}
+	}
+
+	refreshVertexBuffer();
+	refreshIndexBuffer();
 }
 
 

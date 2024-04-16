@@ -55,6 +55,9 @@ private:
 
 	mat4 calculateLocalMatrix();
 
+	void refreshVertexBuffer();
+	void refreshIndexBuffer();
+
 public:
 	void recalculateGlobalMatrix(); //recalculates also the children
 	void setParent(Editable* parent);//NULL means no fatherless
@@ -79,6 +82,9 @@ public:
 
 	vec3 getScale();
 	void setScale(const vec3& scale);
+
+	void addVertex(vec3 pos, vec2 uv = vec2(0, 0));
+	void removeVertex(unsigned int vertexID);
 
 	//static part
 private:

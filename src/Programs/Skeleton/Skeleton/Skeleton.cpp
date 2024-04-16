@@ -348,9 +348,10 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	}
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
-		endOperation(69);
-		if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT)
+		if (currentOperation==Operation::NONE&&Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT)
 			ObjectLocalList::open(vec2(pX, pY));
+
+		endOperation(69);
 	}
 
 	glutPostRedisplay();
