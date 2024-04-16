@@ -172,7 +172,7 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 
 	switch(key)
 	{
-		case 'g':
+		case 'g': //move
 			switch (Layout::getLayoutByMousePos(pX, pY))
 			{
 			case Layout::OBJECT:
@@ -195,7 +195,7 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			}
 			break;
 
-		case 's':
+		case 's': //scale
 			switch (Layout::getLayoutByMousePos(pX, pY))
 			{
 			case Layout::OBJECT:
@@ -218,13 +218,7 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			}
 			break;
 
-		case '\t':
-			selectedVertexIDs.clear();
-			if(selectedEditable!=NULL)
-				showVertices = 1 - showVertices;
-			break;
-
-		case 'a':
+		case 'a': //select all
 			switch (Layout::getLayoutByMousePos(pX, pY))
 			{
 			case Layout::OBJECT:
@@ -239,6 +233,103 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 				break;
 			}
 			
+			break;
+
+		case 'd': //duplicate
+			if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT&&selectedEditable!=NULL)
+			{
+				if (showVertices == 0) //object mode
+				{
+					//duplicate object
+				}
+				else //edit mode
+				{
+					if (selectedVertexIDs.size() == 0)
+						break;
+
+					const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+					unsigned int orgVertexCount = vertices.size();
+					for (int i = 0; i < selectedVertexIDs.size(); i++)
+					{
+						//add new data
+						selectedEditable->addVertex(vertices[selectedVertexIDs[i]].position, vertices[selectedVertexIDs[i]].uv);
+						//refresh vertex id
+						selectedVertexIDs[i] = orgVertexCount + i;
+					}
+
+					startOperation(Operation::MOVE_VERTEX);
+				}
+			}
+			break;
+
+		case 'x': //delete
+			if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT && selectedEditable != NULL)
+			{
+				if (showVertices == 0) //object mode
+				{
+					//delete object
+				}
+				else //edit mode
+				{
+					if (selectedVertexIDs.size() == 0)
+						break;
+
+					//sort the selected indices in a decending order, so that the values selectedVertexIDs won't become invalid if one of them is deleted
+					for (int i = 0; i < selectedVertexIDs.size(); i++)
+					{
+						for (int j = 0; j < selectedVertexIDs.size() - 1 - i; j++)
+						{
+							if (selectedVertexIDs[j] < selectedVertexIDs[j + 1])
+							{
+								unsigned int temp = selectedVertexIDs[j];
+								selectedVertexIDs[j] = selectedVertexIDs[j + 1];
+								selectedVertexIDs[j + 1] = temp;
+							}
+						}
+					}
+
+					for (int i = 0; i < selectedVertexIDs.size(); i++)
+						selectedEditable->removeVertex(selectedVertexIDs[i]);
+
+					selectedVertexIDs.clear();
+
+					if (selectedEditable->getVertices().size() == 0)
+					{
+						Editable::removeWithChildren(selectedEditable);
+						selectedEditable == NULL;
+						showVertices = 0;
+					}
+				}
+			}
+			break;
+
+		case 'f': //create face
+			if (Layout::getLayoutByMousePos(pX, pY) == Layout::OBJECT 
+				&& selectedEditable != NULL
+				&& selectedVertexIDs.size()==3
+				&& showVertices!=0)
+			{
+				const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+
+				//check in which direction should the normal face
+				mat4 mv = selectedEditable->getGlobalMatrix() * cam.getViewMatrix();
+
+				vec3 a_t = vertices[selectedVertexIDs[0]].position * mv;
+				vec3 b_t = vertices[selectedVertexIDs[1]].position * mv;
+				vec3 c_t = vertices[selectedVertexIDs[2]].position * mv;
+
+				vec3 kreuzProdukt = cross(a_t - b_t, c_t - b_t);
+				if (kreuzProdukt.z < 0)
+					selectedEditable->addFace(selectedVertexIDs[0], selectedVertexIDs[1], selectedVertexIDs[2]);
+				else
+					selectedEditable->addFace(selectedVertexIDs[1], selectedVertexIDs[0], selectedVertexIDs[2]);
+			}
+			break;
+
+		case '\t': //switch between edit and object modes
+			selectedVertexIDs.clear();
+			if (selectedEditable != NULL)
+				showVertices = 1 - showVertices;
 			break;
 	}
 	

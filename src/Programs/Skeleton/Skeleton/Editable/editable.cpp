@@ -236,6 +236,14 @@ void Editable::removeVertex(unsigned int vertexID)
 	refreshIndexBuffer();
 }
 
+void Editable::addFace(unsigned int vertexID0, unsigned int vertexID1, unsigned int vertexID2)
+{
+	indices.push_back(vertexID0);
+	indices.push_back(vertexID1);
+	indices.push_back(vertexID2);
+
+	refreshIndexBuffer();
+}
 
 //static part
 static VertexData presetVertices_Cube[] = {
@@ -444,7 +452,7 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		program3DUnlit.setUniform(vec3(1, 0.85f, 0), "colour");
-		glDrawElements(GL_POINTS, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
+		glDrawArrays(GL_POINTS, 0, Editable::edibles[i]->vertices.size());
 	}
 
 	glDepthFunc(GL_LESS);

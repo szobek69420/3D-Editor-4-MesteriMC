@@ -85,6 +85,7 @@ public:
 
 	void addVertex(vec3 pos, vec2 uv = vec2(0, 0));
 	void removeVertex(unsigned int vertexID);
+	void addFace(unsigned int vertexID0, unsigned int vertexID1, unsigned int vertexID2);
 
 	//static part
 private:
