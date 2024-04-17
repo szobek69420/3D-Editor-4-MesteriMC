@@ -43,6 +43,8 @@ public:
 	static void setLayout(const layout_t* panels, unsigned int count);
 	static void refresh();//should be called when window size changes
 
+	static void renderImGUI();
+
 	static int getLayoutBounds(layout_t type, vec2* bottomLeft, vec2* topRight);//returns 0, if there is no such layout_t displayed
 
 	static layout_t getLayoutByMousePos(int pX, int pY);

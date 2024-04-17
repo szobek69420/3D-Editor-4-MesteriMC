@@ -3,6 +3,10 @@
 #include "../System/system.h"
 #include "../ui/header/header.h"
 
+#include "../ImGui/imgui.h"
+
+#include <string.h>
+
 
 static layout_t layoutPresets_object[] = { Layout::OBJECT };
 static layout_t layoutPresets_uv[] = { Layout::UV };
@@ -95,4 +99,19 @@ layout_t Layout::getLayoutByMousePos(int pX, int pY)
 		return Layout::panels[i].type;
 	}
 	return Layout::NONE;
+}
+
+void Layout::renderImGUI()
+{
+	if (Layout::panels.size() < 1)
+		return;
+
+	for (int i = 0; i < Layout::panels.size(); i++)
+	{
+		static char windowName[20];
+		sprintf_s(windowName, 20, "layout_window_%d", i);
+
+		ImGui::SetNextWindowPos(ImVec2(Layout::panels[i].bottomLeft.x, Layout::panels[i].topRight.y));
+		ImGui::SetNextWindowSize(ImVec2(Layout::panels[i].topRight.x-Layout::panels[i].bottomLeft.x, Layout::panels[i].bottomLeft.y - Layout::panels[i].topRight.y));
+	}
 }

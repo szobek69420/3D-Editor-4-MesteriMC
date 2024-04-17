@@ -1120,6 +1120,7 @@ void ImguiFrame()
 		if (Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight))
 			ObjectLocalList::render(bottomLeft, topRight);
 
+		Layout::renderImGUI();
 	} while (0);
 
 
