@@ -27,6 +27,11 @@ enum Operation {
 	SCALE_OBJECT, SCALE_VERTEX, SCALE_VERTEX_UV
 };
 
+enum OperationDirection {
+	DIR_ALL=-1, DIR_X=0, DIR_Y=1, DIR_Z=2
+};
+typedef OperationDirection OD;
+
 class OperationRollbackItemObject {
 public:
 	Editable* edible;
@@ -70,6 +75,7 @@ int middleButtonDown = 0;
 int rightButtonDown = 0;
 layout_t currentLayout = Layout::NONE;
 int currentOperation = Operation::NONE;
+int currentOperationDirection = OperationDirection::DIR_ALL;
 std::vector<OperationRollbackItemObject> operationRollbackObject;
 std::vector<OperationRollbackItemVertex> operationRollbackVertex;
 float operationHelper11; vec2 operationHelper21; vec3 operationHelper31;
@@ -168,6 +174,38 @@ void onDisplay() {
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
 	
+	ImGui_ImplGLUT_KeyboardFunc(key, pX, pY);
+
+	if (ImGui::GetIO().WantCaptureKeyboard)
+	{
+		glutPostRedisplay();
+		return;
+	}
+
+	if (currentOperation != Operation::NONE)
+	{
+		switch (key)//check for inputs that are connected to the current operation
+		{
+			case 'x':
+				if (Layout::getLayoutByMousePos(pX, pY)!=Layout::OBJECT)
+					break;
+				currentOperationDirection = currentOperationDirection == OperationDirection::DIR_X ? OperationDirection::DIR_ALL : OperationDirection::DIR_X;
+				return;
+
+			case 'y':
+				if (Layout::getLayoutByMousePos(pX, pY) != Layout::OBJECT)
+					break;
+				currentOperationDirection = currentOperationDirection == OperationDirection::DIR_Y ? OperationDirection::DIR_ALL : OperationDirection::DIR_Y;
+				return;
+
+			case 'z':
+				if (Layout::getLayoutByMousePos(pX, pY) != Layout::OBJECT)
+					break;
+				currentOperationDirection = currentOperationDirection == OperationDirection::DIR_Z ? OperationDirection::DIR_ALL : OperationDirection::DIR_Z;
+				return;
+		}
+	}
+
 	endOperation(69);
 
 	switch(key)
@@ -335,9 +373,6 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 				showVertices = 1 - showVertices;
 			break;
 	}
-	
-
-	ImGui_ImplGLUT_KeyboardFunc(key, pX, pY);
 
 	glutPostRedisplay();
 }
@@ -762,6 +797,7 @@ void startOperation(Operation op)
 		operationRollbackVertex.push_back(OperationRollbackItemVertex(vertices[selectedVertexIDs[i]], selectedVertexIDs[i]));
 
 	currentOperation = op;
+	currentOperationDirection = OperationDirection::DIR_ALL;
 
 	//helpers
 	int pX, pY;
@@ -770,6 +806,24 @@ void startOperation(Operation op)
 	vec2 bottomLeft, topRight;
 	switch (currentOperation)
 	{
+	case MOVE_OBJECT:
+		//operationHelper31: the overall movement
+
+		operationHelper31 = vec3();
+		break;
+
+	case MOVE_VERTEX:
+		//operationHelper31: the overall movement
+
+		operationHelper31 = vec3();
+		break;
+
+	case MOVE_VERTEX_UV:
+		//operationHelper21: the overall movement
+
+		operationHelper21 = vec2();
+		break;
+
 	case SCALE_OBJECT:
 		//operationHelper21: the screen space position of the center of the object
 		//operationHelper22: the mouse position in screen space at the start of the operation
@@ -859,6 +913,7 @@ void endOperation(int discard)
 	operationRollbackObject.clear();
 	operationRollbackVertex.clear();
 	currentOperation = Operation::NONE;
+	currentOperationDirection = OperationDirection::DIR_ALL;
 }
 
 void processOperation(int dX, int dY)
@@ -875,6 +930,8 @@ void processOperation(int dX, int dY)
 	{
 	case Operation::MOVE_VERTEX_UV:
 		delta2= 0.002f * cam2Dzoom * vec2(dX, -dY);
+		operationHelper21 = operationHelper21 + delta2;
+
 		for (int i = 0; i < selectedVertexIDs.size(); i++)
 		{
 			vd = selectedEditable->getVertices()[selectedVertexIDs[i]];
@@ -884,18 +941,37 @@ void processOperation(int dX, int dY)
 		break;
 
 	case Operation::MOVE_VERTEX:
-		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		operationHelper31 = operationHelper31 + 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		delta3 = operationHelper31;
+
+		switch (currentOperationDirection)
+		{
+			case OD::DIR_X: delta3[1] = delta3[2] = 0; break;
+			case OD::DIR_Y: delta3[0] = delta3[2] = 0; break;
+			case OD::DIR_Z: delta3[0] = delta3[1] = 0; break;
+		}
+
 		for (int i = 0; i < selectedVertexIDs.size(); i++)
 		{
-			vd = selectedEditable->getVertices()[selectedVertexIDs[i]];
+			vd = operationRollbackVertex[i].data;
 			vd.position = vd.position + delta3;
+
 			selectedEditable->setVertexData(selectedVertexIDs[i], vd);
 		}
 		break;
 
 	case Operation::MOVE_OBJECT:
-		delta3 = 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
-		selectedEditable->setPosition(selectedEditable->getPosition() + delta3);
+		operationHelper31 = operationHelper31 + 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		delta3 = operationHelper31;
+
+		switch (currentOperationDirection)
+		{
+			case OD::DIR_X: delta3[1] = delta3[2] = 0; break;
+			case OD::DIR_Y: delta3[0] = delta3[2] = 0; break;
+			case OD::DIR_Z: delta3[0] = delta3[1] = 0; break;
+		}
+
+		selectedEditable->setPosition(operationRollbackObject[0].position + delta3);
 		selectedEditable->recalculateGlobalMatrix();
 		break;
 
@@ -904,7 +980,16 @@ void processOperation(int dX, int dY)
 			float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
 			if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
 				ratio *= -1;
-			selectedEditable->setScale(ratio * operationHelper31);
+			vec3 ratioVec = vec3(ratio, ratio, ratio);
+
+			switch (currentOperationDirection)
+			{
+			case OD::DIR_X: ratioVec[1] = ratioVec[2] = 1; break;
+			case OD::DIR_Y: ratioVec[0] = ratioVec[2] = 1; break;
+			case OD::DIR_Z: ratioVec[0] = ratioVec[1] = 1; break;
+			}
+
+			selectedEditable->setScale(ratioVec * operationHelper31);
 			selectedEditable->recalculateGlobalMatrix();
 		} while (0);
 		break;
@@ -914,10 +999,18 @@ void processOperation(int dX, int dY)
 			float ratio = length(vec2(pX, pY) - operationHelper21) / length(operationHelper22 - operationHelper21);
 			if (dot(vec2(pX, pY) - operationHelper21, operationHelper22 - operationHelper21) < 0)
 				ratio *= -1;
+			vec3 ratioVec = vec3(ratio, ratio, ratio);
+
+			switch (currentOperationDirection)
+			{
+			case OD::DIR_X: ratioVec[1] = ratioVec[2] = 1; break;
+			case OD::DIR_Y: ratioVec[0] = ratioVec[2] = 1; break;
+			case OD::DIR_Z: ratioVec[0] = ratioVec[1] = 1; break;
+			}
 
 			for (int i = 0; i < operationRollbackVertex.size(); i++)
 			{
-				vec3 newVertexPos = ratio*(operationRollbackVertex[i].data.position-operationHelper31)+operationHelper31;
+				vec3 newVertexPos = ratioVec *(operationRollbackVertex[i].data.position-operationHelper31)+operationHelper31;
 				selectedEditable->setVertexData(
 					operationRollbackVertex[i].vertexID,
 					VertexData(newVertexPos, operationRollbackVertex[i].data.uv)
