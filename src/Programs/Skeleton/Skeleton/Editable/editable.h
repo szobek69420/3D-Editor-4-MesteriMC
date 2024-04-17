@@ -50,7 +50,7 @@ private:
 	char albedoPath[200];
 
 private:
-	Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
+	Editable(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
 	~Editable();
 
 	mat4 calculateLocalMatrix();
@@ -96,10 +96,12 @@ public:
 	static void initialize();
 	static void deinitialize();
 
-	static Editable* add(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
+	static Editable* add(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
 	static Editable* add(Editable::Preset preset);
 	static void remove(Editable* edible);
 	static void removeWithChildren(Editable* edible);
+
+	static Editable* clone(Editable* edible);
 
 	static void renderHierarchy();
 	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices);
@@ -110,6 +112,7 @@ public:
 
 private:
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy
+	static void incrementTextureReference(unsigned int texture); //helper function for clone
 };
 
 #endif

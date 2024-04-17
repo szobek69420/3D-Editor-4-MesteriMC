@@ -22,7 +22,7 @@ static float rectangleVBOContent[] = { 0,0,1,0,1,1,1,1,0,1,0,0 };
 extern Editable* selectedEditable;
 extern std::vector<unsigned int> selectedVertexIDs;
 
-Editable::Editable(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
+Editable::Editable(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
 	editablesCreated++;
 
@@ -316,7 +316,7 @@ void Editable::deinitialize()
 
 
 
-Editable* Editable::add(VertexData* vertices, unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
+Editable* Editable::add(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
 	Editable* logus = new Editable(vertices, indices, vertexCount, indexCount);
 	Editable::edibles.push_back(logus);
@@ -363,6 +363,31 @@ void Editable::removeWithChildren(Editable* edible)
 	for (int i = 0; i < edible->children.size(); i++)
 		Editable::removeWithChildren(edible->children[i]);
 	Editable::remove(edible);
+}
+
+Editable* Editable::clone(Editable* edible)
+{
+	Editable* edible2 = Editable::add(edible->vertices.data(), edible->indices.data(), edible->vertices.size(), edible->indices.size());
+	
+	//copy name
+	strcpy(edible2->name, "copy of ");
+	strcpy_s(edible2->name+8, sizeof(edible2->name) - 8, edible->name);
+
+	//copy orientation data
+	edible2->localPosition = edible->localPosition;
+	edible2->localRotation = edible->localRotation;
+	edible2->localScale = edible->localScale;
+	edible2->globalModelMatrix = edible->globalModelMatrix;
+
+	//copy parent
+	edible2->parent = edible->parent;
+
+	//copy texture
+	edible2->albedo = edible->albedo;
+	Editable::incrementTextureReference(edible2->albedo);
+	strcpy(edible2->albedoPath, edible->albedoPath);
+
+	return edible2;
 }
 
 void Editable::renderHierarchyItem(Editable* edible)
@@ -647,5 +672,21 @@ void Editable::releaseTexture(unsigned int texture)
 	{
 		glDeleteTextures(1, &Editable::textures[index].texture);
 		Editable::textures.erase(Editable::textures.begin() + index);
+	}
+}
+
+
+void Editable::incrementTextureReference(unsigned int texture)
+{
+	if (texture == 0)
+		return;
+
+	for (int i = 0; i < Editable::textures.size(); i++)
+	{
+		if (texture == Editable::textures[i].texture)
+		{
+			Editable::textures[i].referenceCount++;
+			return;
+		}
 	}
 }

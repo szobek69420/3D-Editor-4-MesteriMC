@@ -240,7 +240,10 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			{
 				if (showVertices == 0) //object mode
 				{
-					//duplicate object
+					selectedEditable = Editable::clone(selectedEditable);
+					editablesInScene.push_back(selectedEditable);
+
+					startOperation(Operation::MOVE_OBJECT);
 				}
 				else //edit mode
 				{
