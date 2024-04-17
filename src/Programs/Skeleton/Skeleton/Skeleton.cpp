@@ -14,6 +14,7 @@
 #include "Layout/layout.h"
 #include "Grid/grid.h"
 #include "OrientationIcon/orientation_icon.h"
+#include "Axis/axis.h"
 
 #include "Editable/editable.h"
 
@@ -75,7 +76,7 @@ int middleButtonDown = 0;
 int rightButtonDown = 0;
 layout_t currentLayout = Layout::NONE;
 int currentOperation = Operation::NONE;
-int currentOperationDirection = OperationDirection::DIR_ALL;
+int currentOperationDirection = OperationDirection::DIR_ALL; vec3 currentOperationAxisCenter;
 std::vector<OperationRollbackItemObject> operationRollbackObject;
 std::vector<OperationRollbackItemVertex> operationRollbackVertex;
 float operationHelper11; vec2 operationHelper21; vec3 operationHelper31;
@@ -94,6 +95,7 @@ void selectPoint2D(int pX, int pY, int append);
 void startOperation(Operation op);
 void endOperation(int discard = 0);
 void processOperation(int dX, int dY);
+vec3 calculateOperationCenter();
 
 void ImguiFrame();
 
@@ -119,6 +121,7 @@ void onInitialization() {
 
 	Grid::initialize();
 	OrientationIcon::initialize();
+	Axis::initialize();
 
 	Layout::setLayout(Layout::Preset::Object);
 
@@ -132,6 +135,7 @@ void onDeinitialization()
 {
 	Grid::deinitialize();
 	OrientationIcon::deinitialize();
+	Axis::deinitialize();
 	Editable::deinitialize();
 	ImGuiLoader::destroy();
 }
@@ -157,6 +161,12 @@ void onDisplay() {
 		Grid::setColour(0.3f, 0.3f, 0.3f);
 		Grid::render(200, bottomLeft, topRight, cam, -100*stepSize);
 		Editable::render3D(cam, bottomLeft, topRight, showVertices);
+		switch (currentOperationDirection)
+		{
+			case OD::DIR_X: Axis::render(Axis::Direction::DIR_X, cam, currentOperationAxisCenter, bottomLeft, topRight); break;
+			case OD::DIR_Y: Axis::render(Axis::Direction::DIR_Y, cam, currentOperationAxisCenter, bottomLeft, topRight); break;
+			case OD::DIR_Z: Axis::render(Axis::Direction::DIR_Z, cam, currentOperationAxisCenter, bottomLeft, topRight); break;
+		}
 
 		if (topRight.x - bottomLeft.x > 100 && topRight.y - bottomLeft.y > 100)
 			OrientationIcon::render(cam, topRight - vec2(80, 80), topRight - vec2(20, 20));
@@ -190,18 +200,24 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 				if (Layout::getLayoutByMousePos(pX, pY)!=Layout::OBJECT)
 					break;
 				currentOperationDirection = currentOperationDirection == OperationDirection::DIR_X ? OperationDirection::DIR_ALL : OperationDirection::DIR_X;
+				currentOperationAxisCenter = calculateOperationCenter();
+				glutPostRedisplay();
 				return;
 
 			case 'y':
 				if (Layout::getLayoutByMousePos(pX, pY) != Layout::OBJECT)
 					break;
 				currentOperationDirection = currentOperationDirection == OperationDirection::DIR_Y ? OperationDirection::DIR_ALL : OperationDirection::DIR_Y;
+				currentOperationAxisCenter = calculateOperationCenter();
+				glutPostRedisplay();
 				return;
 
 			case 'z':
 				if (Layout::getLayoutByMousePos(pX, pY) != Layout::OBJECT)
 					break;
 				currentOperationDirection = currentOperationDirection == OperationDirection::DIR_Z ? OperationDirection::DIR_ALL : OperationDirection::DIR_Z;
+				currentOperationAxisCenter = calculateOperationCenter();
+				glutPostRedisplay();
 				return;
 		}
 	}
@@ -1037,6 +1053,44 @@ void processOperation(int dX, int dY)
 		} while (0);
 		break;
 	}
+}
+
+vec3 calculateOperationCenter()
+{
+	vec3 vissza=vec3();
+
+	switch (currentOperation)
+	{
+		case Operation::MOVE_OBJECT:
+			for (int i = 0; i < operationRollbackObject.size(); i++)
+				vissza = vissza + operationRollbackObject[i].position;
+			if (operationRollbackVertex.size() > 0)
+				vissza = vissza / operationRollbackObject.size();
+			break;
+
+		case Operation::MOVE_VERTEX:
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+				vissza = vissza + operationRollbackVertex[i].data.position;
+			if (operationRollbackVertex.size() > 0)
+				vissza = vissza / operationRollbackVertex.size();
+			break;
+
+		case Operation::SCALE_OBJECT:
+			for (int i = 0; i < operationRollbackObject.size(); i++)
+				vissza = vissza + operationRollbackObject[i].position;
+			if (operationRollbackVertex.size() > 0)
+				vissza = vissza / operationRollbackObject.size();
+			break;
+
+		case Operation::SCALE_VERTEX:
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+				vissza = vissza + operationRollbackVertex[i].data.position;
+			if (operationRollbackVertex.size() > 0)
+				vissza = vissza / operationRollbackVertex.size();
+			break;
+	}
+
+	return vissza;
 }
 
 

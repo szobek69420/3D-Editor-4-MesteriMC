@@ -78,6 +78,9 @@
     <ClCompile Include="ui\object_local\object_local_list.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Axis\axis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -146,6 +149,9 @@
     <ClInclude Include="ui\object_local\object_local_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Axis\axis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\render3D\shader_3d.vag" />
@@ -163,5 +169,7 @@
     <None Include="assets\shaders\grid\shader_grid_axis.vag" />
     <None Include="assets\shaders\orientation\shader_orientation.vag" />
     <None Include="assets\shaders\orientation\shader_orientation.fag" />
+    <None Include="assets\shaders\axis\shader_axis.vag" />
+    <None Include="assets\shaders\axis\shader_axis.fag" />
   </ItemGroup>
 </Project>

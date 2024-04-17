@@ -74,6 +74,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Axis\axis.cpp" />
     <ClCompile Include="Camera\camera.cpp" />
     <ClCompile Include="Editable\editable.cpp" />
     <ClCompile Include="framework.cpp" />
@@ -97,6 +98,7 @@
     <ClCompile Include="ui\uv_editor\uv_editor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Axis\axis.h" />
     <ClInclude Include="Camera\camera.h" />
     <ClInclude Include="Editable\editable.h" />
     <ClInclude Include="framework.h" />
@@ -121,6 +123,8 @@
     <ClInclude Include="ui\uv_editor\uv_editor.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\shaders\axis\shader_axis.fag" />
+    <None Include="assets\shaders\axis\shader_axis.vag" />
     <None Include="assets\shaders\grid\shader_grid.fag" />
     <None Include="assets\shaders\grid\shader_grid.vag" />
     <None Include="assets\shaders\grid\shader_grid_2.vag" />

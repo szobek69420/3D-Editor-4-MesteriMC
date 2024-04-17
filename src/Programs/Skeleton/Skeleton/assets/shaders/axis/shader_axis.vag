@@ -1,0 +1,20 @@
+#version 330 core
+layout (location=0) in float aPos;
+
+uniform int direction;//<0: x, ==0: y, >0: z
+uniform vec3 center;
+uniform mat4 vp;
+
+void main()
+{
+	vec3 vertexPos;
+
+	if(direction<0)//x
+		vertexPos=vec3(aPos,0,0);
+	else if(direction==0)//y
+		vertexPos=vec3(0,aPos,0);
+	else //z
+		vertexPos=vec3(0,0,aPos);
+
+	gl_Position=vec4(center+vertexPos,1)*vp;
+}
