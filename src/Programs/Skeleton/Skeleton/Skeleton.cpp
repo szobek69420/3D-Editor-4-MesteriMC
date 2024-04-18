@@ -83,6 +83,7 @@ std::vector<OperationRollbackItemObject> operationRollbackObject;
 std::vector<OperationRollbackItemVertex> operationRollbackVertex;
 float operationHelper11; vec2 operationHelper21; vec3 operationHelper31;
 float operationHelper12; vec2 operationHelper22; vec3 operationHelper32;
+float operationCenterFromCamera;//only used for the mouse sensitivity calculation, do not use elsewhere
 
 void rotateCamera(int dX, int dY);
 void moveOrigin(int dX, int dY);
@@ -829,11 +830,23 @@ void startOperation(Operation op)
 	case MOVE_OBJECT:
 		//operationHelper31: the overall movement
 
+		operationCenterFromCamera = length(selectedEditable->getPosition()-cam.getPosition());
 		operationHelper31 = vec3();
 		break;
 
 	case MOVE_VERTEX:
 		//operationHelper31: the overall movement
+
+		do {
+			vec3 temp = vec3();
+			const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+			for (auto& i = selectedVertexIDs.begin(); i < selectedVertexIDs.end(); i++)
+				temp = temp + vertices[*i].position;
+			if (selectedVertexIDs.size() > 0)
+				temp = temp / selectedVertexIDs.size();
+
+			operationCenterFromCamera = length(temp);
+		} while (0);
 
 		operationHelper31 = vec3();
 		break;
@@ -857,6 +870,8 @@ void startOperation(Operation op)
 			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
 			operationHelper22 = vec2(pX, pY);
 			operationHelper31 = selectedEditable->getScale();
+
+			operationCenterFromCamera = 1.732f;//it is the distance that is used when comparing in calcMouseSens
 		} while (0);
 		break;
 
@@ -880,6 +895,9 @@ void startOperation(Operation op)
 			vec4 temp = vec4(operationHelper31, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
 			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
 			operationHelper22 = vec2(pX, pY);
+
+			//operation distance
+			operationCenterFromCamera = length(cam.getPosition() - operationHelper31);
 		} while (0);
 		break;
 
@@ -1113,6 +1131,8 @@ vec2 calculateMouseSensitivity3D(const vec2& bottomLeft, const vec2& topRight)//
 	//calculate the fov ratio ( 0.5 = sin(60/2) )
 	ratio = ratio * (0.5f / sinf(DEG2RAD * 0.5f * cam.getFov()));
 
+	//distance from camera
+	ratio = ratio * (operationCenterFromCamera / 1.732f);
 
 	return MOUSE_SENSITIVITY_AT_1080P_60FOV * ratio;
 }
