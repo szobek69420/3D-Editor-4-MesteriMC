@@ -22,6 +22,8 @@
 #include "ui/uv_editor/uv_editor.h"
 #include "ui/object_local/object_local_list.h"
 
+#define DEG2RAD 0.01745329252f
+
 enum Operation {
 	NONE,
 	MOVE_OBJECT, MOVE_VERTEX, MOVE_VERTEX_UV,
@@ -96,6 +98,8 @@ void startOperation(Operation op);
 void endOperation(int discard = 0);
 void processOperation(int dX, int dY);
 vec3 calculateOperationCenter();
+vec2 calculateMouseSensitivity3D(const vec2& bottomLeft, const vec2& topRight);
+vec2 calculateMouseSensitivity2D(const vec2& bottomLeft, const vec2& topRight);
 
 void ImguiFrame();
 
@@ -593,7 +597,7 @@ void selectPoint3D(int pX, int pY, int append)
 		2.0f * (pX - bottomLeft.x) / (topRight.x - bottomLeft.x) - 1,
 		2.0f * (pY - topRight.y) / (bottomLeft.y- topRight.y) - 1);
 
-	float szam = sinf(0.01745329252f * 0.5f*cam.getFov());
+	float szam = sinf(DEG2RAD * 0.5f*cam.getFov());
 	float szam2 = (topRight.x - bottomLeft.x) / (bottomLeft.y- topRight.y);
 
 	ndc.x *= szam*szam2;
@@ -945,7 +949,8 @@ void processOperation(int dX, int dY)
 	switch (currentOperation)
 	{
 	case Operation::MOVE_VERTEX_UV:
-		delta2= 0.002f * cam2Dzoom * vec2(dX, -dY);
+		Layout::getLayoutBounds(Layout::UV, &bottomLeft, &topRight);
+		delta2= calculateMouseSensitivity2D(bottomLeft, topRight)*vec2(dX, -dY);
 		operationHelper21 = operationHelper21 + delta2;
 
 		for (int i = 0; i < selectedVertexIDs.size(); i++)
@@ -957,9 +962,11 @@ void processOperation(int dX, int dY)
 		break;
 
 	case Operation::MOVE_VERTEX:
-		operationHelper31 = operationHelper31 + 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
+		delta2 = calculateMouseSensitivity3D(bottomLeft, topRight);
+		operationHelper31 = operationHelper31 + delta2.x * dX * cam.getRight() - delta2.y * dY * cam.getUp();
 		delta3 = operationHelper31;
-
+		
 		switch (currentOperationDirection)
 		{
 			case OD::DIR_X: delta3[1] = delta3[2] = 0; break;
@@ -1091,6 +1098,39 @@ vec3 calculateOperationCenter()
 	}
 
 	return vissza;
+}
+
+vec2 calculateMouseSensitivity3D(const vec2& bottomLeft, const vec2& topRight)//the fov of the 3D camera is counted
+{
+	static const vec2 MOUSE_SENSITIVITY_AT_1080P_60FOV = vec2(0.0034f, 0.0034f);
+
+	//calculate the screen ratio
+	vec2 ratio = vec2(1920.0f/ fabsf(topRight.x - bottomLeft.x), 1080.0f/fabsf(topRight.y - bottomLeft.y));
+
+	//calculate the aspect ratio
+	ratio.x *= fabsf((topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y)) * 0.5625f;//0.5625 is the 1/aspectXY @ 1080p
+
+	//calculate the fov ratio ( 0.5 = sin(60/2) )
+	ratio = ratio * (0.5f / sinf(DEG2RAD * 0.5f * cam.getFov()));
+
+
+	return MOUSE_SENSITIVITY_AT_1080P_60FOV * ratio;
+}
+
+vec2 calculateMouseSensitivity2D(const vec2& bottomLeft, const vec2& topRight)
+{
+	static const vec2 MOUSE_SENSITIVITY_AT_1080P_1ZOOM = vec2(0.00185f, 0.00185f);
+
+	//calculate the screen ratio
+	vec2 ratio = vec2(1920.0f / fabsf(topRight.x - bottomLeft.x), 1080.0f / fabsf(topRight.y - bottomLeft.y));
+
+	//calculate the aspect ratio
+	ratio.x *= fabsf((topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y)) * 0.5625f;//0.5625 is the 1/aspectXY @ 1080p
+
+	//zoom
+	ratio = cam2Dzoom * ratio;
+
+	return MOUSE_SENSITIVITY_AT_1080P_1ZOOM * ratio;
 }
 
 
