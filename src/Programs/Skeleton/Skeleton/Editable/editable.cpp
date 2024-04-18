@@ -15,7 +15,9 @@
 
 static int editablesCreated = 0;
 
-static GPUProgram program3D, program3DUnlit, program2D, program2DRectangle;
+static GPUProgram program3D, program3DUnlit, program3DNormal;
+static GPUProgram program2D, program2DRectangle;
+
 static unsigned int rectangleVAO, rectangleVBO;
 static float rectangleVBOContent[] = { 0,0,1,0,1,1,1,1,0,1,0,0 };
 
@@ -284,6 +286,14 @@ void Editable::initialize()
 		"fragColour",
 		nullptr);
 
+	program3DNormal.createFromFile(
+		"./assets/shaders/render3D/normal/shader_3d_normal.vag",
+		"./assets/shaders/render3D/normal/shader_3d_normal.fag",
+		"fragColour",
+		"./assets/shaders/render3D/normal/shader_3d_normal.gag"
+		);
+
+
 	program2D.createFromFile("./assets/shaders/render2D/shader_2d.vag",
 		"./assets/shaders/render2D/shader_2d.fag",
 		"fragColour",
@@ -419,7 +429,7 @@ void Editable::renderHierarchy()
 }
 
 
-void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices)
+void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices, int showNormals)
 {
 	glViewport(bottomLeft.x, bottomLeft.y, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
 
@@ -443,11 +453,16 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 	program3DUnlit.setUniform(camera.getViewMatrix(), "view");
 	program3DUnlit.setUniform(vec3(0), "colour");
 
+	program3DNormal.Use();
+	program3DNormal.setUniform(camera.getViewMatrix() * projection, "vp");
+	program3DNormal.setUniform(vec3(1, 1, 0), "colour");
+
 	for (int i = 0; i < Editable::edibles.size(); i++)
 	{
+		glBindVertexArray(Editable::edibles[i]->vao);
+
 		program3D.Use();
 		program3D.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
-		glBindVertexArray(Editable::edibles[i]->vao);
 
 		if (Editable::edibles[i]->albedo != 0)
 		{
@@ -467,6 +482,7 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 		if (showVertices==0||Editable::edibles[i] != selectedEditable)
 			continue;
 
+		//render lines and points
 		program3DUnlit.Use();
 
 		program3DUnlit.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
@@ -478,6 +494,14 @@ void Editable::render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, in
 
 		program3DUnlit.setUniform(vec3(1, 0.85f, 0), "colour");
 		glDrawArrays(GL_POINTS, 0, Editable::edibles[i]->vertices.size());
+
+		//render normals
+		if (showNormals == 0)
+			continue;
+
+		program3DNormal.Use();
+		program3DNormal.setUniform(Editable::edibles[i]->globalModelMatrix, "model");
+		glDrawElements(GL_TRIANGLES, Editable::edibles[i]->indices.size(), GL_UNSIGNED_INT, NULL);
 	}
 
 	glDepthFunc(GL_LESS);

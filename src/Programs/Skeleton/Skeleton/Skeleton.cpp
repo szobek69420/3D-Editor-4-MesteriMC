@@ -71,6 +71,7 @@ std::vector<Editable*> editablesInScene;
 Editable* selectedEditable = NULL;
 std::vector<unsigned int> selectedVertexIDs;
 int showVertices = 0;
+int showVertexNormals = 0;
 
 int lastMouseX = 0, lastMouseY = 0;
 int leftButtonDonw = 0;
@@ -165,7 +166,7 @@ void onDisplay() {
 		Grid::setStepSize(stepSize);
 		Grid::setColour(0.3f, 0.3f, 0.3f);
 		Grid::render(200, bottomLeft, topRight, cam, -100*stepSize);
-		Editable::render3D(cam, bottomLeft, topRight, showVertices);
+		Editable::render3D(cam, bottomLeft, topRight, showVertices, showVertexNormals);
 		switch (currentOperationDirection)
 		{
 			case OD::DIR_X: Axis::render(Axis::Direction::DIR_X, cam, currentOperationAxisCenter, bottomLeft, topRight); break;
@@ -392,6 +393,11 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			selectedVertexIDs.clear();
 			if (selectedEditable != NULL)
 				showVertices = 1 - showVertices;
+			break;
+
+		case 'n':
+			if (showVertices != 0)
+				showVertexNormals = 1 - showVertexNormals;
 			break;
 	}
 

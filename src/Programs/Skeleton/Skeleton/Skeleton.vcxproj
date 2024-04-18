@@ -135,11 +135,14 @@
     <None Include="assets\shaders\render2D\shader_2d.vag" />
     <None Include="assets\shaders\render2D\shader_2d_rectangle.fag" />
     <None Include="assets\shaders\render2D\shader_2d_rectangle.vag" />
+    <None Include="assets\shaders\render3D\normal\shader_3d_normal.fag" />
+    <None Include="assets\shaders\render3D\normal\shader_3d_normal.vag" />
     <None Include="assets\shaders\render3D\shader_3d.fag" />
     <None Include="assets\shaders\render3D\shader_3d.gag" />
     <None Include="assets\shaders\render3D\shader_3d.vag" />
     <None Include="assets\shaders\render3D\shader_3d_unlit.fag" />
     <None Include="assets\shaders\render3D\shader_3d_unlit.vag" />
+    <None Include="assets\shaders\render3D\normal\shader_3d_normal.gag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

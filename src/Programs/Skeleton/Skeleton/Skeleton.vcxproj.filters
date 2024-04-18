@@ -171,5 +171,8 @@
     <None Include="assets\shaders\orientation\shader_orientation.fag" />
     <None Include="assets\shaders\axis\shader_axis.vag" />
     <None Include="assets\shaders\axis\shader_axis.fag" />
+    <None Include="assets\shaders\render3D\normal\shader_3d_normal.gag" />
+    <None Include="assets\shaders\render3D\normal\shader_3d_normal.vag" />
+    <None Include="assets\shaders\render3D\normal\shader_3d_normal.fag" />
   </ItemGroup>
 </Project>
