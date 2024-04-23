@@ -1,3 +1,7 @@
+#include <crtdbg.h>
+#include <ShObjIdl.h>
+#include <objbase.h>
+
 #include "framework.h"
 
 #include <GL/freeglut.h>	// must be downloaded unless you have an Apple
@@ -103,6 +107,8 @@ void closeAllLocalLists();
 
 // Initialization, create an OpenGL context
 void onInitialization() {
+	CoInitialize(NULL);
+
 	cam = Camera();
 	cam.setPosition(vec3(3, 2.449466f, 3));
 	cam.setRotation(-30, 45);
@@ -138,6 +144,8 @@ void onDeinitialization()
 	Axis::deinitialize();
 	Editable::deinitialize();
 	ImGuiLoader::destroy();
+
+	CoUninitialize();
 }
 
 // Window has become invalid: Redraw

@@ -3,6 +3,8 @@
 #include <GL/glew.h>
 #include <string.h>
 #include <vector>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "../framework.h"
 
@@ -13,7 +15,7 @@
 
 #include "../TextureLoader/texture_loader.h"
 
-static int editablesCreated = 0;
+static int editablesCreated = 1;
 
 static GPUProgram program3D, program3DUnlit, program2D, program2DRectangle;
 static unsigned int rectangleVAO, rectangleVBO;
@@ -24,7 +26,7 @@ extern std::vector<unsigned int> selectedVertexIDs;
 
 Editable::Editable(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
-	editablesCreated++;
+	id=editablesCreated++;
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -312,6 +314,68 @@ void Editable::deinitialize()
 
 	glDeleteVertexArrays(1, &rectangleVAO);
 	glDeleteBuffers(1, &rectangleVBO);
+}
+
+void Editable::saveAs(const char* filePath)
+{
+	FILE* file = fopen(filePath, "w");
+	if (file == NULL)
+	{
+		printf("save file could not be created/opened\n");
+		return;
+	}
+
+	for (int i = 0; i < Editable::edibles.size(); i++)
+	{
+		Editable::printEditableToFile(Editable::edibles[i], file);
+	}
+
+	fclose(file);
+}
+
+void importFrom(const char* filePath);
+
+void Editable::printEditableToFile(Editable* edible, FILE* file)
+{
+	fprintf(file, "id: %d\n", edible->id);
+
+	if (strnlen_s(edible->name, EDIBLE_NAME_MAX_LENGTH) == 0)
+		fprintf(file, "name: sus\n");
+	else
+		fprintf(file, "name: %s\n", edible->name);
+
+	fprintf(file, "pos: %.5f, %.5f, %.5f\n", edible->localPosition.x, edible->localPosition.y, edible->localPosition.z);
+	fprintf(file, "scale: %.5f, %.5f, %.5f\n", edible->localScale.x, edible->localScale.y, edible->localScale.z);
+	fprintf(file, "rot: %.5f, %.5f, %.5f\n", edible->localRotation.x, edible->localRotation.y, edible->localRotation.z);
+
+	if (edible->parent == NULL)
+		fprintf(file, "parent: 0\n");
+	else
+		fprintf(file, "parent: %d\n", edible->parent->id);
+
+	fprintf(file, "child count: %d\n", edible->children.size());
+	for (int i = 0; i < edible->children.size(); i++)
+		fprintf(file, "%d\n", edible->children[i]->id);
+
+	fprintf(file, "vertex count: %d\n", edible->vertices.size());
+	for (int i = 0; i < edible->vertices.size(); i++)
+		fprintf(
+			file,
+			"%.5f, %.5f, %.5f, %.5f, %.5f\n",
+			edible->vertices[i].position.x,
+			edible->vertices[i].position.y,
+			edible->vertices[i].position.z,
+			edible->vertices[i].uv.x,
+			edible->vertices[i].uv.y
+		);
+	fprintf(file, "index count: %d\n", edible->indices.size());
+	for (int i = 0; i < edible->indices.size(); i++)
+		fprintf(file, "%d\n", edible->indices[i]);
+
+	if (edible->albedo == 0||strnlen_s(edible->albedoPath, EDIBLE_PATH_MAX_LENGTH)==0)
+		fprintf(file, "albedo: none\n");
+	else
+		fprintf(file, "albedo: %s\n", edible->albedoPath);
 }
 
 

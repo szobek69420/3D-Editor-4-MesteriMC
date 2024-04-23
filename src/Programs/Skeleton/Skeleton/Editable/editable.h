@@ -5,6 +5,9 @@
 #include "../framework.h"
 #include "../Camera/camera.h"
 
+#define EDIBLE_NAME_MAX_LENGTH 100
+#define EDIBLE_PATH_MAX_LENGTH 200
+
 class VertexData {
 public:
 	vec3 position;
@@ -17,7 +20,7 @@ public:
 class EditableTexture {
 public:
 	unsigned int texture;
-	char path[200];
+	char path[EDIBLE_PATH_MAX_LENGTH];
 	int referenceCount;
 
 	EditableTexture(unsigned int texture, const char* path);
@@ -32,7 +35,8 @@ public:
 
 	//non static parts
 private:
-	char name[100];
+	unsigned int id;
+	char name[EDIBLE_NAME_MAX_LENGTH];
 
 	vec3 localPosition;
 	vec3 localScale;
@@ -47,7 +51,7 @@ private:
 	std::vector<unsigned int> indices;
 
 	unsigned int albedo=0;
-	char albedoPath[200];
+	char albedoPath[EDIBLE_PATH_MAX_LENGTH];
 
 private:
 	Editable(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
@@ -96,6 +100,9 @@ public:
 	static void initialize();
 	static void deinitialize();
 
+	static void saveAs(const char* filePath);
+	static void importFrom(const char* filePath);
+
 	static Editable* add(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
 	static Editable* add(Editable::Preset preset);
 	static void remove(Editable* edible);
@@ -111,6 +118,7 @@ public:
 	static void releaseTexture(unsigned int texture);
 
 private:
+	static void printEditableToFile(Editable* edible, FILE* file);//helper function for "saveAs"
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy
 	static void incrementTextureReference(unsigned int texture); //helper function for clone
 };

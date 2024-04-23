@@ -1,6 +1,8 @@
 #include "header.h"
 
 #include <vector>
+#include <ShObjIdl.h>
+#include <objbase.h>
 
 #include "../../ImGui/imgui.h"
 #include "../../ImGui/imgui_loader.h"
@@ -100,7 +102,48 @@ void Header::render()
 		ImGui::Button("New");
 		ImGui::Button("Import");
 		ImGui::Button("Save");
-		ImGui::Button("Save as...");
+		if (ImGui::Button("Save as..."))
+		{
+			char filePath[500];
+			strcpy(filePath, "");
+
+			IFileSaveDialog* pSaveFileDlg = NULL;
+			HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSaveFileDlg));
+			if (SUCCEEDED(hr)) {
+				// Set default file name
+				pSaveFileDlg->SetFileName(L"very.sus");
+
+				// Set default folder
+				pSaveFileDlg->SetDefaultFolder(NULL);
+
+				// Add file types filter
+				COMDLG_FILTERSPEC fileTypes[] = { { L"Sus files", L"*.sus" } };
+				pSaveFileDlg->SetFileTypes(1, fileTypes);
+			}
+
+			hr = pSaveFileDlg->Show(NULL);
+			if (SUCCEEDED(hr)) {
+				// User clicked 'Save' or 'Cancel'
+				// If 'Save', get the selected file path
+				IShellItem* pItem;
+				hr = pSaveFileDlg->GetResult(&pItem);
+				if (SUCCEEDED(hr)) {
+					// Get the file path
+					LPWSTR pszFilePath;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+					if (SUCCEEDED(hr)) {
+						// Use pszFilePath
+						CoTaskMemFree(pszFilePath);
+						//obtain the file path
+						wcstombs(filePath, pszFilePath, 500);
+					}
+					pItem->Release();
+				}
+			}
+
+			if (strlen(filePath) > 0)
+				Editable::saveAs(filePath);
+		}
 
 		ImGui::PopStyleColor(3);
 
