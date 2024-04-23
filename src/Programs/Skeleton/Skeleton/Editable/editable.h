@@ -111,7 +111,7 @@ public:
 	static Editable* clone(Editable* edible);
 
 	static void renderHierarchy();
-	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices);
+	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices, int showNormals);
 	static void render2D(const Camera& cum, vec2 bottomLeft, vec2 topRight, float zoom);
 
 	static unsigned int importTexture(const char* path);
