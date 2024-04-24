@@ -57,7 +57,7 @@ public:
 };
 
 
-static int editablesCreated = 1;
+static int currentEditableId = 1;//0 means no object
 
 static GPUProgram program3D, program3DUnlit, program3DNormal;
 static GPUProgram program2D, program2DRectangle;
@@ -70,7 +70,7 @@ extern std::vector<unsigned int> selectedVertexIDs;
 
 Editable::Editable(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount)
 {
-	id=editablesCreated++;
+	id= currentEditableId++;
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -100,7 +100,7 @@ Editable::Editable(const VertexData* vertices, const unsigned int* indices, unsi
 
 	parent = NULL;
 
-	sprintf_s(name, 100, "object_%d", editablesCreated);
+	sprintf_s(name, 100, "object_%d", currentEditableId);
 	strcpy(albedoPath, "");
 }
 
@@ -403,10 +403,10 @@ void Editable::importFrom(const char* filePath)
 
 	//reading stuff
 	int major, minor;
-	fscanf(file, "version: %d.%d\n", &major, &minor);
+	fscanf_s(file, "version: %d.%d\n", &major, &minor);
 
 	int count;
-	fscanf(file, "count: %d\n", &count);
+	fscanf_s(file, "count: %d\n", &count);
 
 	std::vector<SerializableEditable> se;
 	for (int i = 0; i < count; i++)
@@ -415,7 +415,43 @@ void Editable::importFrom(const char* filePath)
 	fclose(file);
 
 	//building scene
-	
+	for (int i = 0; i < se.size(); i++)
+		Editable::serializableToEditable(&se[i]);
+
+	for (int i = 0; i < Editable::edibles.size(); i++)//mindegyiknek megkeresem a szulojet
+	{
+		if (se[i].parentId == 0)//fatherless
+		{
+			Editable::edibles[i]->parent = NULL;
+			continue;
+		}
+
+		for (int j = 0; j < Editable::edibles.size(); j++)//search for parent
+		{
+			if (i == j)
+				continue;
+
+			if (se[i].parentId == Editable::edibles[j]->id)
+			{
+				Editable::edibles[i]->parent = Editable::edibles[j];//adding as parent
+				Editable::edibles[j]->children.push_back(Editable::edibles[i]);//adding as child
+				break;
+			}
+		}
+	}
+
+	//calculate matrices
+	for (int i = 0; i < Editable::edibles.size(); i++)
+	{
+		if (Editable::edibles[i]->parent == NULL)//only calculate model matrix if fatherless, as it is a recursive operation
+			Editable::edibles[i]->recalculateGlobalMatrix();
+	}
+
+	//set id counter
+	for (int i = 0; i < Editable::edibles.size(); i++)
+		if (currentEditableId < Editable::edibles[i]->id)
+			currentEditableId = Editable::edibles[i]->id;
+	currentEditableId++;
 }
 
 void Editable::printEditableToFile(const SerializableEditable* edible, FILE* file)
@@ -596,6 +632,13 @@ Editable* Editable::clone(Editable* edible)
 	strcpy(edible2->albedoPath, edible->albedoPath);
 
 	return edible2;
+}
+
+std::vector<Editable*> Editable::getEditables()
+{
+	std::vector<Editable*> walter;
+	walter.assign(Editable::edibles.begin(), Editable::edibles.end());
+	return walter;
 }
 
 void Editable::renderHierarchyItem(Editable* edible)

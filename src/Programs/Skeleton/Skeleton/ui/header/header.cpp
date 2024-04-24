@@ -23,6 +23,7 @@ void endOperation(int discard);
 extern Editable* selectedEditable;
 extern std::vector<unsigned int> selectedVertexIDs;
 extern int showVertices;
+extern std::vector<Editable*> editablesInScene;
 
 //others
 int Header::currentLocalList = Header::LocalList::NONE;
@@ -202,6 +203,7 @@ void Header::render()
 
 void buttonFunction_import()
 {
+	//do file explorer stuff
 	OPENFILENAMEA open;
 	CHAR szFile[MAX_PATH] = { 0 }; // Initialize buffer for file path
 
@@ -217,6 +219,13 @@ void buttonFunction_import()
 	// Display the Open dialog box
 	if (GetOpenFileNameA(&open) == TRUE)
 		Editable::importFrom(open.lpstrFile);
+
+	//reset selection
+	selectedEditable = NULL;
+	selectedVertexIDs.clear();
+	showVertices = 0;
+
+	editablesInScene = Editable::getEditables();
 }
 
 void buttonFunction_saveAs()

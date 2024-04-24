@@ -68,7 +68,7 @@ private:
 
 public:
 	void recalculateGlobalMatrix(); //recalculates also the children
-	void setParent(Editable* parent);//NULL means no fatherless
+	void setParent(Editable* parent);//NULL means fatherless
 	void setName(const char* name);
 
 	const std::vector<VertexData>& getVertices() const;
@@ -113,6 +113,8 @@ public:
 	static void removeWithChildren(Editable* edible);
 
 	static Editable* clone(Editable* edible);
+
+	static std::vector<Editable*> getEditables();
 
 	static void renderHierarchy();
 	static void render3D(const Camera& camera, vec2 bottomLeft, vec2 topRight, int showVertices, int showNormals);
