@@ -15,6 +15,43 @@
 
 #include "../TextureLoader/texture_loader.h"
 
+class SerializableEditable {
+public:
+	unsigned int id;
+	char name[EDIBLE_NAME_MAX_LENGTH];
+	vec3 localPosition;
+	vec3 localScale;
+	vec3 localRotation;
+
+	unsigned int parentId;//the id of the parent (0 is fatherless)
+	std::vector<unsigned int> childId;//the ids of the children
+
+	std::vector<VertexData> vertices;
+	std::vector<unsigned int> indices;
+
+	char albedoPath[EDIBLE_PATH_MAX_LENGTH];
+
+	SerializableEditable(const Editable* edible)
+	{
+		this->id = edible->id;
+		memcpy(this->name, edible->name, EDIBLE_NAME_MAX_LENGTH);
+		this->localPosition = edible->localPosition;
+		this->localScale = edible->localScale;
+		this->localRotation = edible->localRotation;
+		this->parentId = edible->parent == NULL ? 0 : edible->parent->id;
+		for (int i = 0; i < edible->children.size(); i++)
+			this->childId.push_back(edible->children[i]->id);
+		this->vertices.assign(edible->vertices.begin(), edible->vertices.end());
+		this->indices.assign(edible->indices.begin(), edible->indices.end());
+		
+		if (edible->albedo != 0)
+			memcpy(this->albedoPath, edible->albedoPath, EDIBLE_PATH_MAX_LENGTH);
+		else
+			strcpy(this->albedoPath, "none");
+	}
+};
+
+
 static int editablesCreated = 1;
 
 static GPUProgram program3D, program3DUnlit, program3DNormal;
@@ -335,17 +372,48 @@ void Editable::saveAs(const char* filePath)
 		return;
 	}
 
+	fprintf(file, "version: 0.69\n");
+	fprintf(file, "count: %d\n", Editable::edibles.size());
 	for (int i = 0; i < Editable::edibles.size(); i++)
 	{
-		Editable::printEditableToFile(Editable::edibles[i], file);
+		SerializableEditable se(Editable::edibles[i]);
+		Editable::printEditableToFile(&se, file);
 	}
 
 	fclose(file);
 }
 
-void importFrom(const char* filePath);
+void Editable::importFrom(const char* filePath)
+{
+	FILE* file = fopen(filePath, "r");
+	if (file == NULL)
+	{
+		printf("save file could not be opened\n");
+		return;
+	}
 
-void Editable::printEditableToFile(Editable* edible, FILE* file)
+	//clearing previous state
+	for (int i = Editable::edibles.size() - 1; i >= 0; i--)
+		Editable::remove(Editable::edibles[i]);
+
+	//reading stuff
+	int major, minor;
+	fscanf(file, "version: %d.%d\n", &major, &minor);
+
+	int count;
+	fscanf(file, "count: %d\n", &count);
+
+	std::vector<SerializableEditable> se;
+	for (int i = 0; i < count; i++)
+		se.push_back(Editable::readEditableFromFile(file));
+
+	fclose(file);
+
+	//building scene
+
+}
+
+void Editable::printEditableToFile(const SerializableEditable* edible, FILE* file)
 {
 	fprintf(file, "id: %d\n", edible->id);
 
@@ -358,14 +426,11 @@ void Editable::printEditableToFile(Editable* edible, FILE* file)
 	fprintf(file, "scale: %.5f, %.5f, %.5f\n", edible->localScale.x, edible->localScale.y, edible->localScale.z);
 	fprintf(file, "rot: %.5f, %.5f, %.5f\n", edible->localRotation.x, edible->localRotation.y, edible->localRotation.z);
 
-	if (edible->parent == NULL)
-		fprintf(file, "parent: 0\n");
-	else
-		fprintf(file, "parent: %d\n", edible->parent->id);
+	fprintf(file, "parent: %d\n", edible->parentId);
 
-	fprintf(file, "child count: %d\n", edible->children.size());
-	for (int i = 0; i < edible->children.size(); i++)
-		fprintf(file, "%d\n", edible->children[i]->id);
+	fprintf(file, "child count: %d\n", edible->childId.size());
+	for (int i = 0; i < edible->childId.size(); i++)
+		fprintf(file, "%d\n", edible->childId[i]);
 
 	fprintf(file, "vertex count: %d\n", edible->vertices.size());
 	for (int i = 0; i < edible->vertices.size(); i++)
@@ -382,10 +447,31 @@ void Editable::printEditableToFile(Editable* edible, FILE* file)
 	for (int i = 0; i < edible->indices.size(); i++)
 		fprintf(file, "%d\n", edible->indices[i]);
 
-	if (edible->albedo == 0||strnlen_s(edible->albedoPath, EDIBLE_PATH_MAX_LENGTH)==0)
-		fprintf(file, "albedo: none\n");
+	fprintf(file, "albedo: %s\n", edible->albedoPath);
+}
+
+SerializableEditable Editable::readEditableFromFile(FILE* file)
+{
+
+}
+
+Editable* Editable::serializableToEditable(const SerializableEditable* se)
+{
+	Editable* edible = Editable::add(se->vertices.data(), se->indices.data(), se->vertices.size(), se->indices.size());
+
+	edible->id = se->id;
+	memcpy(edible->name, se->name, EDIBLE_NAME_MAX_LENGTH);
+
+	edible->localPosition = se->localPosition;
+	edible->localScale = se->localScale;
+	edible->localRotation = se->localRotation;
+	
+	if (strncmp("none", se->albedoPath, EDIBLE_PATH_MAX_LENGTH) == 0)
+		edible->albedo = 0;
 	else
-		fprintf(file, "albedo: %s\n", edible->albedoPath);
+		edible->setAlbedo(se->albedoPath);
+
+	return edible;
 }
 
 

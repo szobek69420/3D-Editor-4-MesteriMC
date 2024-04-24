@@ -26,7 +26,11 @@ public:
 	EditableTexture(unsigned int texture, const char* path);
 };
 
+class SerializableEditable;
+
 class Editable {
+
+	friend SerializableEditable;
 
 public:
 	enum Preset {
@@ -118,7 +122,9 @@ public:
 	static void releaseTexture(unsigned int texture);
 
 private:
-	static void printEditableToFile(Editable* edible, FILE* file);//helper function for "saveAs"
+	static void printEditableToFile(const SerializableEditable* edible, FILE* file);//helper function for "saveAs"
+	static SerializableEditable readEditableFromFile(FILE* file);
+	static Editable serializableToEditable(const SerializableEditable* se);//the parents and children are ignored here
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy
 	static void incrementTextureReference(unsigned int texture); //helper function for clone
 };
