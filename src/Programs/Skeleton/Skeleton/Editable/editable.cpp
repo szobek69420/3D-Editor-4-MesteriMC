@@ -31,6 +31,11 @@ public:
 
 	char albedoPath[EDIBLE_PATH_MAX_LENGTH];
 
+	SerializableEditable()
+	{
+		//does nothing
+	}
+
 	SerializableEditable(const Editable* edible)
 	{
 		this->id = edible->id;
@@ -410,7 +415,7 @@ void Editable::importFrom(const char* filePath)
 	fclose(file);
 
 	//building scene
-
+	
 }
 
 void Editable::printEditableToFile(const SerializableEditable* edible, FILE* file)
@@ -452,7 +457,50 @@ void Editable::printEditableToFile(const SerializableEditable* edible, FILE* fil
 
 SerializableEditable Editable::readEditableFromFile(FILE* file)
 {
+	SerializableEditable se;
 
+	unsigned int count;
+
+	fscanf_s(file, "id: %d\n", &se.id);
+	fscanf_s(file, "name: %s\n", se.name, EDIBLE_NAME_MAX_LENGTH);
+
+	fscanf_s(file, "pos: %f, %f, %f\n", &se.localPosition.x, &se.localPosition.y, &se.localPosition.z);
+	fscanf_s(file, "scale: %f, %f, %f\n", &se.localScale.x, &se.localScale.y, &se.localScale.z);
+	fscanf_s(file, "rot: %f, %f, %f\n", &se.localRotation.x, &se.localRotation.y, &se.localRotation.z);
+	
+	fscanf_s(file, "parent: %d\n", &se.parentId);
+	fscanf_s(file, "child count: %d\n", &count);
+	for (unsigned int i = 0; i < count; i++)
+	{
+		se.childId.push_back(69);
+		fscanf_s(file, "%d\n", &se.childId[i]);
+	}
+
+	fscanf_s(file, "vertex count: %d\n", &count);
+	for (unsigned int i = 0; i < count; i++)
+	{
+		VertexData vd;
+		fscanf_s(
+			file,
+			"%f, %f, %f, %f, %f\n",
+			&vd.position.x,
+			&vd.position.y,
+			&vd.position.z,
+			&vd.uv.x,
+			&vd.uv.y
+		);
+		se.vertices.push_back(vd);
+	}
+	fscanf_s(file, "index count: %d\n", &count);
+	for (int i = 0; i < count; i++)
+	{
+		se.indices.push_back(69);
+		fscanf_s(file, "%d\n", &se.indices[i]);
+	}
+
+	fscanf_s(file, "albedo: %s\n", se.albedoPath, EDIBLE_PATH_MAX_LENGTH);
+
+	return se;
 }
 
 Editable* Editable::serializableToEditable(const SerializableEditable* se)

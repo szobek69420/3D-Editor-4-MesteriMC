@@ -13,6 +13,10 @@
 
 #include "../../Editable/editable.h"
 
+//local functions
+void buttonFunction_import();
+void buttonFunction_saveAs();
+
 //externals
 void endOperation(int discard);
 
@@ -100,50 +104,11 @@ void Header::render()
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 0.2f));
 		
 		ImGui::Button("New");
-		ImGui::Button("Import");
+		if(ImGui::Button("Import"))
+			buttonFunction_import();
 		ImGui::Button("Save");
 		if (ImGui::Button("Save as..."))
-		{
-			char filePath[500];
-			strcpy(filePath, "");
-
-			IFileSaveDialog* pSaveFileDlg = NULL;
-			HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSaveFileDlg));
-			if (SUCCEEDED(hr)) {
-				// Set default file name
-				pSaveFileDlg->SetFileName(L"very.sus");
-
-				// Set default folder
-				pSaveFileDlg->SetDefaultFolder(NULL);
-
-				// Add file types filter
-				COMDLG_FILTERSPEC fileTypes[] = { { L"Sus files", L"*.sus" } };
-				pSaveFileDlg->SetFileTypes(1, fileTypes);
-			}
-
-			hr = pSaveFileDlg->Show(NULL);
-			if (SUCCEEDED(hr)) {
-				// User clicked 'Save' or 'Cancel'
-				// If 'Save', get the selected file path
-				IShellItem* pItem;
-				hr = pSaveFileDlg->GetResult(&pItem);
-				if (SUCCEEDED(hr)) {
-					// Get the file path
-					LPWSTR pszFilePath;
-					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-					if (SUCCEEDED(hr)) {
-						// Use pszFilePath
-						CoTaskMemFree(pszFilePath);
-						//obtain the file path
-						wcstombs(filePath, pszFilePath, 500);
-					}
-					pItem->Release();
-				}
-			}
-
-			if (strlen(filePath) > 0)
-				Editable::saveAs(filePath);
-		}
+			buttonFunction_saveAs();
 
 		ImGui::PopStyleColor(3);
 
@@ -233,4 +198,66 @@ void Header::render()
 		ImGui::PopStyleColor();
 		break;
 	}
+}
+
+void buttonFunction_import()
+{
+	OPENFILENAMEA open;
+	CHAR szFile[MAX_PATH] = { 0 }; // Initialize buffer for file path
+
+	ZeroMemory(&open, sizeof(open));
+	open.lStructSize = sizeof(OPENFILENAMEA);
+	open.lpstrFilter = "Sus files\0*.sus\0\0";
+	open.nFileOffset = 1;
+	open.lpstrFile = szFile; // Assign buffer to store file path
+	open.nMaxFile = MAX_PATH;
+	open.lpstrTitle = "Choose texture..";
+	open.Flags = OFN_FILEMUSTEXIST;
+
+	// Display the Open dialog box
+	if (GetOpenFileNameA(&open) == TRUE)
+		Editable::importFrom(open.lpstrFile);
+}
+
+void buttonFunction_saveAs()
+{
+	char filePath[500];
+	strcpy(filePath, "");
+
+	IFileSaveDialog* pSaveFileDlg = NULL;
+	HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSaveFileDlg));
+	if (SUCCEEDED(hr)) {
+		// Set default file name
+		pSaveFileDlg->SetFileName(L"very.sus");
+
+		// Set default folder
+		pSaveFileDlg->SetDefaultFolder(NULL);
+
+		// Add file types filter
+		COMDLG_FILTERSPEC fileTypes[] = { { L"Sus files", L"*.sus" } };
+		pSaveFileDlg->SetFileTypes(1, fileTypes);
+	}
+
+	hr = pSaveFileDlg->Show(NULL);
+	if (SUCCEEDED(hr)) {
+		// User clicked 'Save' or 'Cancel'
+		// If 'Save', get the selected file path
+		IShellItem* pItem;
+		hr = pSaveFileDlg->GetResult(&pItem);
+		if (SUCCEEDED(hr)) {
+			// Get the file path
+			LPWSTR pszFilePath;
+			hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+			if (SUCCEEDED(hr)) {
+				// Use pszFilePath
+				CoTaskMemFree(pszFilePath);
+				//obtain the file path
+				wcstombs(filePath, pszFilePath, 500);
+			}
+			pItem->Release();
+		}
+	}
+
+	if (strlen(filePath) > 0)
+		Editable::saveAs(filePath);
 }
