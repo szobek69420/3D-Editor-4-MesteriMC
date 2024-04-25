@@ -113,6 +113,8 @@ void closeAllLocalLists();
 
 // Initialization, create an OpenGL context
 void onInitialization() {
+	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);//so that onDeinitialization is called
+
 	CoInitialize(NULL);
 
 	cam = Camera();
