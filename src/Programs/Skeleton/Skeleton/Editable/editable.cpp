@@ -643,7 +643,56 @@ std::vector<Editable*> Editable::getEditables()
 
 void Editable::renderHierarchyItem(Editable* edible)
 {
-	ImGui::Text(edible->name);
+	static char displayedName[5 + EDIBLE_NAME_MAX_LENGTH];
+
+	int shouldPopStyle = 0;
+	if (edible == selectedEditable)//highlight the selected edible
+	{
+		shouldPopStyle = 69;
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.85f, 0, 1));
+	}
+
+	strcpy(displayedName, "- ");
+	strcat_s(displayedName, sizeof(displayedName), edible->name);
+	if (ImGui::Button(displayedName))
+	{
+		selectedEditable = edible;
+	}
+
+	if (shouldPopStyle != 0)//pop the style if necessary
+		ImGui::PopStyleColor(1);
+
+	if (ImGui::BeginDragDropSource())//if a drag has started
+	{
+		unsigned int temp = edible->id;
+		ImGui::SetDragDropPayload("hierarchy_payload", &temp, sizeof(unsigned int), ImGuiCond_Always);
+		ImGui::EndDragDropSource();
+	}
+	if (ImGui::BeginDragDropTarget())//if a drag ended
+	{
+		const ImGuiPayload* payLoad =ImGui::AcceptDragDropPayload("hierarchy_payload");
+		if (payLoad != NULL && *(const unsigned int*)payLoad->Data !=0&&edible->id != *(const unsigned int*)payLoad->Data)//if the drag is valid
+		{
+			unsigned int index = Editable::edibles.size();
+			for (unsigned int i = 0; i < Editable::edibles.size(); i++)
+			{
+				if (Editable::edibles[i]->id != *(const unsigned int*)payLoad->Data)
+					continue;
+
+				index = i;
+				break;
+			}
+
+			if (index < Editable::edibles.size())
+			{
+				Editable::edibles[index]->setParent(edible);
+				Editable::edibles[index]->recalculateGlobalMatrix();
+			}
+		}
+
+		ImGui::EndDragDropTarget();
+	}
+
 	ImGui::Indent(10);
 	for (int i = 0; i < edible->children.size(); i++)
 		Editable::renderHierarchyItem(edible->children[i]);
@@ -655,9 +704,21 @@ void Editable::renderHierarchy()
 	static int windowWidth, windowHeight;
 	System::getWindowSize(&windowWidth, &windowHeight);
 
+
 	ImGui::SetNextWindowPos(ImVec2(windowWidth - 200, Header::HeightInPixels));
 	ImGui::SetNextWindowSize(ImVec2(200, 300));
 	ImGui::Begin("hierarchy", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+
+	//show title
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 1, 1, 1));
+	ImGui::Text("Object hierarchy");
+	ImGui::PopStyleColor();
+
+	//show items
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
 
 	for (int i = 0; i < edibles.size(); i++)
 	{
@@ -665,6 +726,8 @@ void Editable::renderHierarchy()
 			continue;
 		Editable::renderHierarchyItem(edibles[i]);
 	}
+
+	ImGui::PopStyleColor(4);
 
 	ImGui::End();
 }
