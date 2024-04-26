@@ -32,7 +32,8 @@
 enum Operation {
 	NONE,
 	MOVE_OBJECT, MOVE_VERTEX, MOVE_VERTEX_UV,
-	SCALE_OBJECT, SCALE_VERTEX, SCALE_VERTEX_UV
+	SCALE_OBJECT, SCALE_VERTEX, SCALE_VERTEX_UV,
+	ROTATE_OBJECT, ROTATE_VERTEX, ROTATE_VERTEX_UV
 };
 
 enum OperationDirection {
@@ -87,7 +88,7 @@ int currentOperation = Operation::NONE;
 int currentOperationDirection = OperationDirection::DIR_ALL; vec3 currentOperationAxisCenter;
 std::vector<OperationRollbackItemObject> operationRollbackObject;
 std::vector<OperationRollbackItemVertex> operationRollbackVertex;
-float operationHelper11; vec2 operationHelper21; vec3 operationHelper31;
+float operationHelper11; vec2 operationHelper21; vec3 operationHelper31; quat operationHelperQ1;
 float operationHelper12; vec2 operationHelper22; vec3 operationHelper32;
 float operationCenterFromCamera;//only used for the mouse sensitivity calculation, do not use elsewhere
 
@@ -287,6 +288,29 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			case Layout::UV:
 				if (selectedVertexIDs.size() > 1)
 					startOperation(Operation::SCALE_VERTEX_UV);
+				break;
+			}
+			break;
+
+		case 'r': //rotate
+			switch (Layout::getLayoutByMousePos(pX, pY))
+			{
+			case Layout::OBJECT:
+				if (showVertices == 0)//object mode
+				{
+					if (selectedEditable != NULL)
+						startOperation(Operation::ROTATE_OBJECT);
+				}
+				else//edit mode
+				{
+					if (selectedVertexIDs.size() > 1)
+						startOperation(Operation::ROTATE_VERTEX);
+				}
+				break;
+
+			case Layout::UV:
+				if (selectedVertexIDs.size() > 1)
+					startOperation(Operation::ROTATE_VERTEX_UV);
 				break;
 			}
 			break;
@@ -864,7 +888,7 @@ void startOperation(Operation op)
 			if (selectedVertexIDs.size() > 0)
 				temp = temp / selectedVertexIDs.size();
 
-			operationCenterFromCamera = length(temp);
+			operationCenterFromCamera = length(temp-cam.getPosition());
 		} while (0);
 
 		operationHelper31 = vec3();
@@ -944,6 +968,32 @@ void startOperation(Operation op)
 			vec4 temp = vec4(operationHelper31, 1) * vp;
 			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
 			operationHelper22 = vec2(pX, pY);
+		} while (0);
+		break;
+
+	case ROTATE_OBJECT:
+		//operationHelper21: the overall mouse movement
+
+		operationCenterFromCamera = length(selectedEditable->getPosition() - cam.getPosition());
+		operationHelper21 = vec2();
+		break;
+
+	case ROTATE_VERTEX:
+		//operationHelper21: the overall mouse movement
+		//operationHelper31: the center of rotation
+
+		do {
+			vec3 temp = vec3();
+			const std::vector<VertexData>& vertices = selectedEditable->getVertices();
+			for (auto& i = selectedVertexIDs.begin(); i < selectedVertexIDs.end(); i++)
+				temp = temp + vertices[*i].position;
+			if (selectedVertexIDs.size() > 0)
+				temp = temp / selectedVertexIDs.size();
+
+			operationCenterFromCamera = length(temp-cam.getPosition());
+			operationHelper31 = temp;
+
+			operationHelper21 = vec2();
 		} while (0);
 		break;
 	}
@@ -1096,6 +1146,127 @@ void processOperation(int dX, int dY)
 			}
 		} while (0);
 		break;
+
+	case Operation::ROTATE_OBJECT:
+		do {
+			operationHelper21 = operationHelper21 + vec2(dX, dY);
+
+			vec3 rotAxis;
+			float angle=1;
+
+			switch (currentOperationDirection)
+			{
+			case OD::DIR_X: 
+				do {
+					rotAxis = vec3(1, 0, 0);
+					vec3 temp = operationHelper21.y * cam.getUp() + operationHelper21.x * cam.getRight();
+					temp.x = 0;
+					temp = cross(rotAxis, temp);
+					if (dot(temp, cam.getDirection()) < 0)
+						angle = 0.01f * length(temp);
+					else
+						angle = -0.01f * length(temp);
+				} while (0);
+				break;
+			case OD::DIR_Y: 
+				do {
+					rotAxis = vec3(0, 1, 0);
+					vec3 temp = operationHelper21.y * cam.getUp() + operationHelper21.x * cam.getRight();
+					temp.y = 0;
+					temp = cross(rotAxis, temp);
+					if (dot(temp, cam.getDirection()) < 0)
+						angle = -0.01f*length(temp);
+					else
+						angle = 0.01f*length(temp);
+				} while (0);
+				break;
+			case OD::DIR_Z: 
+				do {
+					rotAxis = vec3(0, 0, 1);
+					vec3 temp = operationHelper21.y * cam.getUp() + operationHelper21.x * cam.getRight();
+					temp.z = 0;
+					temp = cross(rotAxis, temp);
+					if (dot(temp, cam.getDirection()) < 0)
+						angle = 0.01f * length(temp);
+					else
+						angle = -0.01f * length(temp);
+				} while (0);
+				break;
+			default:
+				rotAxis = normalize(operationHelper21.x * cam.getUp() + operationHelper21.y * cam.getRight());
+				angle = 0.01f * length(operationHelper21);
+				break;
+			}
+
+			quat temp = Quaternion(angle, rotAxis);
+
+			selectedEditable->setRotation(temp * operationRollbackObject[0].rotation);
+			selectedEditable->recalculateGlobalMatrix();
+		} while (0);
+		break;
+
+	case Operation::ROTATE_VERTEX:
+		do {
+			operationHelper21 = operationHelper21 + vec2(dX, dY);
+
+			vec3 rotAxis;
+			float angle = 1;
+
+			switch (currentOperationDirection)
+			{
+			case OD::DIR_X:
+				do {
+					rotAxis = vec3(1, 0, 0);
+					vec3 temp = operationHelper21.y * cam.getUp() + operationHelper21.x * cam.getRight();
+					temp.x = 0;
+					temp = cross(rotAxis, temp);
+					if (dot(temp, cam.getDirection()) < 0)
+						angle = 0.01f * length(temp);
+					else
+						angle = -0.01f * length(temp);
+				} while (0);
+				break;
+			case OD::DIR_Y:
+				do {
+					rotAxis = vec3(0, 1, 0);
+					vec3 temp = operationHelper21.y * cam.getUp() + operationHelper21.x * cam.getRight();
+					temp.y = 0;
+					temp = cross(rotAxis, temp);
+					if (dot(temp, cam.getDirection()) < 0)
+						angle = -0.01f * length(temp);
+					else
+						angle = 0.01f * length(temp);
+				} while (0);
+				break;
+			case OD::DIR_Z:
+				do {
+					rotAxis = vec3(0, 0, 1);
+					vec3 temp = operationHelper21.y * cam.getUp() + operationHelper21.x * cam.getRight();
+					temp.z = 0;
+					temp = cross(rotAxis, temp);
+					if (dot(temp, cam.getDirection()) < 0)
+						angle = 0.01f * length(temp);
+					else
+						angle = -0.01f * length(temp);
+				} while (0);
+				break;
+			default:
+				rotAxis = normalize(operationHelper21.x * cam.getUp() + operationHelper21.y * cam.getRight());
+				angle = 0.01f * length(operationHelper21);
+				break;
+			}
+
+			quat q = Quaternion(angle, rotAxis);
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+			{
+#define o operationRollbackVertex[i]
+				VertexData cucc=o.data;
+				cucc.position = Quaternion::rotateVector(o.data.position - operationHelper31, q) + operationHelper31;
+				selectedEditable->setVertexData(o.vertexID, cucc);
+#undef o
+			}
+		} while (0);
+		break;
 	}
 }
 
@@ -1127,6 +1298,20 @@ vec3 calculateOperationCenter()
 			break;
 
 		case Operation::SCALE_VERTEX:
+			for (int i = 0; i < operationRollbackVertex.size(); i++)
+				vissza = vissza + operationRollbackVertex[i].data.position;
+			if (operationRollbackVertex.size() > 0)
+				vissza = vissza / operationRollbackVertex.size();
+			break;
+
+		case Operation::ROTATE_OBJECT:
+			for (int i = 0; i < operationRollbackObject.size(); i++)
+				vissza = vissza + operationRollbackObject[i].position;
+			if (operationRollbackVertex.size() > 0)
+				vissza = vissza / operationRollbackObject.size();
+			break;
+
+		case Operation::ROTATE_VERTEX:
 			for (int i = 0; i < operationRollbackVertex.size(); i++)
 				vissza = vissza + operationRollbackVertex[i].data.position;
 			if (operationRollbackVertex.size() > 0)

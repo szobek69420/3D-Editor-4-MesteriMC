@@ -186,3 +186,9 @@ Quaternion Quaternion::lerp(const Quaternion& q1, const Quaternion& q2, float t)
 
 	return result;
 }
+
+vec3 Quaternion::rotateVector(const vec3& vec, const Quaternion& q)
+{
+	quat result = q * Quaternion(0, vec.x, vec.y, vec.z) * Quaternion::inverse(q);
+	return vec3(result.x, result.y, result.z);
+}

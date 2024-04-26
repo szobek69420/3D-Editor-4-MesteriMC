@@ -30,6 +30,7 @@ public:
 
 	static Quaternion inverse(const Quaternion& _quat);
 	static Quaternion lerp(const Quaternion& q1, const Quaternion& q2, float t);
+	static vec3 rotateVector(const vec3& vec, const Quaternion& q);
 };
 
 Quaternion operator*(float a, const Quaternion& _quat);
