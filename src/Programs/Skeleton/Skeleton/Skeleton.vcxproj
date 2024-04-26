@@ -89,6 +89,7 @@
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Layout\layout.cpp" />
     <ClCompile Include="OrientationIcon\orientation_icon.cpp" />
+    <ClCompile Include="Quaternion\quaternion.cpp" />
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="System\system.cpp" />
     <ClCompile Include="TextureLoader\stb_image.cpp" />
@@ -115,6 +116,7 @@
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Layout\layout.h" />
     <ClInclude Include="OrientationIcon\orientation_icon.h" />
+    <ClInclude Include="Quaternion\quaternion.h" />
     <ClInclude Include="System\system.h" />
     <ClInclude Include="TextureLoader\stb_image.h" />
     <ClInclude Include="TextureLoader\texture_loader.h" />

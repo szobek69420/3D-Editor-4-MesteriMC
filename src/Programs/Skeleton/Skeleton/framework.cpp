@@ -36,8 +36,6 @@ void onIdle();
 
 void onReshape(int width, int height);
 
-void onDeinitialization();
-
 // Entry point of the application
 int main(int argc, char * argv[]) {
 	// Initialize GLUT, Glew and OpenGL 
@@ -83,7 +81,5 @@ int main(int argc, char * argv[]) {
 	glutReshapeFunc(onReshape);
 
 	glutMainLoop();
-
-	onDeinitialization();
 	return 1;
 }

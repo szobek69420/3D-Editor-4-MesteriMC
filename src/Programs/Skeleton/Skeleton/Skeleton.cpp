@@ -3,6 +3,7 @@
 #include <objbase.h>
 
 #include "framework.h"
+#include "Quaternion/quaternion.h"
 
 #include <GL/freeglut.h>	// must be downloaded unless you have an Apple
 #include <math.h>
@@ -43,10 +44,10 @@ class OperationRollbackItemObject {
 public:
 	Editable* edible;
 	vec3 position;
-	vec3 rotation;
+	quat rotation;
 	vec3 scale;
 
-	OperationRollbackItemObject(Editable* edible, const vec3& position, const vec3& rotation, const vec3& scale)
+	OperationRollbackItemObject(Editable* edible, const vec3& position, const quat& rotation, const vec3& scale)
 	{
 		this->edible = edible;
 		this->position = position;
@@ -108,12 +109,14 @@ vec2 calculateMouseSensitivity3D(const vec2& bottomLeft, const vec2& topRight);
 vec2 calculateMouseSensitivity2D(const vec2& bottomLeft, const vec2& topRight);
 
 void ImguiFrame();
+void onDeinitialization();
 
 void closeAllLocalLists();
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);//so that onDeinitialization is called
+	atexit(onDeinitialization);
 
 	CoInitialize(NULL);
 

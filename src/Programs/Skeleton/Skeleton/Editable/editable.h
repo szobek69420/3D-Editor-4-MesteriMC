@@ -4,6 +4,7 @@
 #include <vector>
 #include "../framework.h"
 #include "../Camera/camera.h"
+#include "../Quaternion/quaternion.h"
 
 #define EDIBLE_NAME_MAX_LENGTH 100
 #define EDIBLE_PATH_MAX_LENGTH 200
@@ -44,7 +45,7 @@ private:
 
 	vec3 localPosition;
 	vec3 localScale;
-	vec3 localRotation;
+	Quaternion localRotation;
 	mat4 globalModelMatrix;
 
 	Editable* parent;
@@ -85,8 +86,8 @@ public:
 	vec3 getPosition();
 	void setPosition(const vec3& position);
 
-	vec3 getRotation();
-	void setRotation(const vec3& rotation);
+	Quaternion getRotation();
+	void setRotation(const Quaternion& rotation);
 
 	vec3 getScale();
 	void setScale(const vec3& scale);

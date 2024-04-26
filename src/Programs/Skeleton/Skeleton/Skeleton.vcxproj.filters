@@ -81,6 +81,9 @@
     <ClCompile Include="Axis\axis.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Quaternion\quaternion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -150,6 +153,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Axis\axis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Quaternion\quaternion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

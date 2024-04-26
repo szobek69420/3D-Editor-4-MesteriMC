@@ -4,6 +4,14 @@
 
 #include "../framework.h"
 
+Quaternion::Quaternion()
+{
+	this->s = 1;
+	this->x = 0;
+	this->y = 0;
+	this->z = 0;
+}
+
 Quaternion::Quaternion(float s, float x, float y, float z)
 {
 	this->s = s;
@@ -70,36 +78,80 @@ Quaternion Quaternion::operator/(float a) const
 	return a;
 }
 
-Quaternion& Quaternion::operator+=(const Quaternion& quat)
+Quaternion& Quaternion::operator+=(const Quaternion& _quat)
 {
-	s += quat.s;
-	x += quat.x;
-	y += quat.y;
-	z += quat.z;
+	s += _quat.s;
+	x += _quat.x;
+	y += _quat.y;
+	z += _quat.z;
 
 	return *this;
 }
 
-Quaternion Quaternion::operator+(const Quaternion& quat) const
+Quaternion Quaternion::operator+(const Quaternion& _quat) const
 {
 	Quaternion quat2 = *this;
-	quat2 += quat;
+	quat2 += _quat;
 	return quat2;
 }
 
-Quaternion operator*(float a, const Quaternion& quat)
+Quaternion& Quaternion::operator*=(const Quaternion& _quat)
 {
-	return quat * a;
+	vec3 v1(this->x, this->y, this->z), v2(_quat.x, _quat.y, _quat.z);
+	vec3 temp2 = this->s * v2 + _quat.s * v1 + cross(v1, v2);
+
+	this->s = this->s * _quat.s - dot(v1, v2);
+	this->x = temp2.x;
+	this->y = temp2.y;
+	this->z = temp2.z;
+
+	return *this;
 }
 
-float Quaternion::getAngle() const
+Quaternion Quaternion::operator*(const Quaternion& _quat) const
 {
-	float temp = magnitude(*this);
-	float cosAngle = this->s / temp;
-	float sinAngle = length(vec3(this->x, this->y, this->z)) / temp;
+	Quaternion temp = *this;
+	temp *= _quat;
+	return temp;
+}
+
+Quaternion operator*(float a, const Quaternion& _quat)
+{
+	return _quat * a;
+}
+
+float Quaternion::angle() const
+{
+	float cosAngle = this->s;
+	float sinAngle = length(vec3(this->x, this->y, this->z));
 	
 	float angle = 2 * atan2f(sinAngle, cosAngle);
 	return angle;
+}
+
+vec3 Quaternion::axis() const
+{
+	vec3 axis(x, y, z);
+	
+	if (length(axis) > 0.00001f)
+		axis = axis / length(axis);
+
+	return axis;
+}
+
+float Quaternion::magnitude() const
+{
+	return sqrtf(s*s+x*x+y*y+z*z);
+}
+
+mat4 Quaternion::rotateMatrix() const
+{
+	vec3 axis = this->axis();
+	if (length(axis) < 0.00001f)
+		return mat4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
+
+	mat4 neo = RotationMatrix(this->angle(), axis);
+	return neo;
 }
 
 void Quaternion::normalize()
@@ -115,15 +167,17 @@ void Quaternion::normalize()
 }
 
 //static part
-float Quaternion::magnitude(const Quaternion& q)
+Quaternion Quaternion::inverse(const Quaternion& _quat)
 {
-	return sqrtf(q.s * q.s + q.x * q.x + q.y * q.y + q.z * q.z);
+	Quaternion inv(_quat.s, -_quat.x, -_quat.y, -_quat.z);
+	inv /= powf(_quat.magnitude(), 2.0f);
+	return inv;
 }
 
 Quaternion Quaternion::lerp(const Quaternion& q1, const Quaternion& q2, float t)
 {
 	float angle = q1.s * q2.s + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
-	angle /= magnitude(q1) * magnitude(q1);
+	angle /= q1.magnitude() * q2.magnitude();
 	angle = acosf(angle);
 
 	float denominator = sinf(angle);

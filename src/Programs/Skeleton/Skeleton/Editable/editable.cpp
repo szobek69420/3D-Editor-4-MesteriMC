@@ -21,7 +21,7 @@ public:
 	char name[EDIBLE_NAME_MAX_LENGTH];
 	vec3 localPosition;
 	vec3 localScale;
-	vec3 localRotation;
+	quat localRotation;
 
 	unsigned int parentId;//the id of the parent (0 is fatherless)
 	std::vector<unsigned int> childId;//the ids of the children
@@ -95,7 +95,7 @@ Editable::Editable(const VertexData* vertices, const unsigned int* indices, unsi
 
 	localPosition = vec3(0);
 	localScale = vec3(1,1,1);
-	localRotation = vec3(0);
+	localRotation = quat();
 	globalModelMatrix = calculateLocalMatrix();
 
 	parent = NULL;
@@ -116,7 +116,7 @@ Editable::~Editable()
 
 mat4 Editable::calculateLocalMatrix()
 {
-	mat4 local = ScaleMatrix(localScale)*TranslateMatrix(localPosition);
+	mat4 local = ScaleMatrix(localScale)*localRotation.rotateMatrix()*TranslateMatrix(localPosition);
 	//add the rotation later
 	return local;
 }
@@ -231,11 +231,11 @@ void Editable::setPosition(const vec3& position)
 	this->localPosition = position;
 }
 
-vec3 Editable::getRotation()
+quat Editable::getRotation()
 {
 	return this->localRotation;
 }
-void Editable::setRotation(const vec3& rotation)
+void Editable::setRotation(const quat& rotation)
 {
 	this->localRotation = rotation;
 }
@@ -465,7 +465,7 @@ void Editable::printEditableToFile(const SerializableEditable* edible, FILE* fil
 
 	fprintf(file, "pos: %.5f, %.5f, %.5f\n", edible->localPosition.x, edible->localPosition.y, edible->localPosition.z);
 	fprintf(file, "scale: %.5f, %.5f, %.5f\n", edible->localScale.x, edible->localScale.y, edible->localScale.z);
-	fprintf(file, "rot: %.5f, %.5f, %.5f\n", edible->localRotation.x, edible->localRotation.y, edible->localRotation.z);
+	fprintf(file, "rot: %.5f, %.5f, %.5f, %.5f\n", edible->localRotation.s, edible->localRotation.x, edible->localRotation.y, edible->localRotation.z);
 
 	fprintf(file, "parent: %d\n", edible->parentId);
 
@@ -502,7 +502,7 @@ SerializableEditable Editable::readEditableFromFile(FILE* file)
 
 	fscanf_s(file, "pos: %f, %f, %f\n", &se.localPosition.x, &se.localPosition.y, &se.localPosition.z);
 	fscanf_s(file, "scale: %f, %f, %f\n", &se.localScale.x, &se.localScale.y, &se.localScale.z);
-	fscanf_s(file, "rot: %f, %f, %f\n", &se.localRotation.x, &se.localRotation.y, &se.localRotation.z);
+	fscanf_s(file, "rot: %f, %f, %f, %f\n", &se.localRotation.s, &se.localRotation.x, &se.localRotation.y, &se.localRotation.z);
 	
 	fscanf_s(file, "parent: %d\n", &se.parentId);
 	fscanf_s(file, "child count: %d\n", &count);
