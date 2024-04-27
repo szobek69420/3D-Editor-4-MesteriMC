@@ -5,6 +5,7 @@
 #include "../framework.h"
 #include "../Camera/camera.h"
 #include "../Quaternion/quaternion.h"
+#include "../Rollback/rollback.h"
 
 #define EDIBLE_NAME_MAX_LENGTH 100
 #define EDIBLE_PATH_MAX_LENGTH 200
@@ -32,6 +33,8 @@ class SerializableEditable;
 class Editable {
 
 	friend SerializableEditable;
+
+	friend RollbackOrientation;
 
 public:
 	enum Preset {

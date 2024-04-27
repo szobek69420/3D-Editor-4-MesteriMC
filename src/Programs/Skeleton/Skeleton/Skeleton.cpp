@@ -22,6 +22,7 @@
 #include "Axis/axis.h"
 
 #include "Editable/editable.h"
+#include "Rollback/rollback.h"
 
 #include "ui/header/header.h"
 #include "ui/uv_editor/uv_editor.h"
@@ -120,6 +121,8 @@ void onInitialization() {
 	atexit(onDeinitialization);
 
 	CoInitialize(NULL);
+
+	RollbackItem::addToBuffer(RollbackOrientation(69, vec3(),vec3(),quat()));
 
 	cam = Camera();
 	cam.setPosition(vec3(3, 2.449466f, 3));
