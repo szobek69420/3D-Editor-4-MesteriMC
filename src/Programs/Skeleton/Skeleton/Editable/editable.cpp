@@ -186,6 +186,15 @@ void Editable::setVertexData(unsigned int vertexID, VertexData data)
 	glBufferSubData(GL_ARRAY_BUFFER, vertexID * sizeof(VertexData), sizeof(VertexData), &data);
 }
 
+void Editable::setVertexData(const std::vector<VertexData>& _newVertices, const std::vector<unsigned int>& _newIndices)
+{
+	this->vertices = _newVertices;
+	this->indices = _newIndices;
+
+	this->refreshVertexBuffer();
+	this->refreshIndexBuffer();
+}
+
 
 const std::vector<unsigned int>& Editable::getIndices() const
 {

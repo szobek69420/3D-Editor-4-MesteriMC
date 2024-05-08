@@ -439,7 +439,7 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			break;
 
 		case 'z'://rollback
-			if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
+			if (glutGetModifiers() == GLUT_ACTIVE_CTRL||69)
 			{
 				printf("alma\n");
 				RollbackItem::undo();
@@ -878,7 +878,16 @@ void startOperation(Operation op)
 	case MOVE_OBJECT:
 	case SCALE_OBJECT:
 	case ROTATE_OBJECT:
-		RollbackItem::addToBuffer(RollbackOrientation(selectedEditable->getId(), selectedEditable->getPosition(), selectedEditable->getScale(), selectedEditable->getRotation()));
+		RollbackItem::addToBuffer(RollbackOrientationObject(selectedEditable->getId(), selectedEditable->getPosition(), selectedEditable->getScale(), selectedEditable->getRotation()));
+		break;
+
+	case MOVE_VERTEX:
+	case SCALE_VERTEX:
+	case ROTATE_VERTEX:
+	case MOVE_VERTEX_UV:
+	case SCALE_VERTEX_UV:
+	case ROTATE_VERTEX_UV:
+		RollbackItem::addToBuffer(RollbackOrientationVertex(selectedEditable->getId(), selectedEditable->getVertices(), selectedEditable->getIndices()));
 		break;
 	}
 

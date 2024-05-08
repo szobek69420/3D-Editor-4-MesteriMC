@@ -3,6 +3,7 @@
 
 #include "../framework.h"
 #include "../Quaternion/quaternion.h"
+#include "../Editable/editable.h"
 
 #include <vector>
 
@@ -29,14 +30,25 @@ public:
 };
 
 
-class RollbackOrientation : public RollbackItem{
+class RollbackOrientationObject : public RollbackItem{
 public:
-	unsigned int eid;
+	unsigned int eid;//edible id
 	vec3 localPosition;
 	vec3 localScale;
 	quat localRotation;
 
-	RollbackOrientation(unsigned int _eid, vec3 _localPosition, vec3 _localScale, quat _localRotation);
+	RollbackOrientationObject(unsigned int _eid, vec3 _localPosition, vec3 _localScale, quat _localRotation);
+
+	void rollback();
+};
+
+class RollbackOrientationVertex : public RollbackItem {
+public:
+	unsigned int eid;//edible id
+	std::vector<VertexData> vertices;
+	std::vector<unsigned int> indices;
+
+	RollbackOrientationVertex(unsigned int _edi, const std::vector<VertexData>& _vertices, const std::vector<unsigned int>& indices);
 
 	void rollback();
 };

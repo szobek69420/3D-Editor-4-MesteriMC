@@ -5,7 +5,6 @@
 #include "../framework.h"
 #include "../Camera/camera.h"
 #include "../Quaternion/quaternion.h"
-#include "../Rollback/rollback.h"
 
 #define EDIBLE_NAME_MAX_LENGTH 100
 #define EDIBLE_PATH_MAX_LENGTH 200
@@ -34,7 +33,6 @@ class Editable {
 
 	friend SerializableEditable;
 
-	friend RollbackOrientation;
 
 public:
 	enum Preset {
@@ -76,9 +74,10 @@ public:
 	void setName(const char* name);
 
 	const std::vector<VertexData>& getVertices() const;
-	void setVertexData(unsigned int vertexID, VertexData data);
-
 	const std::vector<unsigned int>& getIndices() const;
+
+	void setVertexData(unsigned int vertexID, VertexData data);
+	void setVertexData(const std::vector<VertexData>& _newVertices, const std::vector<unsigned int>& _newIndices);
 
 	mat4 getGlobalMatrix();
 
@@ -95,7 +94,8 @@ public:
 	vec3 getScale();
 	void setScale(const vec3& scale);
 
-	unsigned int getId() { return id; }
+	unsigned int getId() const { return id; }
+	void setId(unsigned int id) { this->id = id; }
 
 	void addVertex(vec3 pos, vec2 uv = vec2(0, 0));
 	void removeVertex(unsigned int vertexID);
