@@ -95,6 +95,8 @@ public:
 	vec3 getScale();
 	void setScale(const vec3& scale);
 
+	unsigned int getId() { return id; }
+
 	void addVertex(vec3 pos, vec2 uv = vec2(0, 0));
 	void removeVertex(unsigned int vertexID);
 	void addFace(unsigned int vertexID0, unsigned int vertexID1, unsigned int vertexID2);

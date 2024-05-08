@@ -122,8 +122,6 @@ void onInitialization() {
 
 	CoInitialize(NULL);
 
-	RollbackItem::addToBuffer(RollbackOrientation(69, vec3(),vec3(),quat()));
-
 	cam = Camera();
 	cam.setPosition(vec3(3, 2.449466f, 3));
 	cam.setRotation(-30, 45);
@@ -435,9 +433,17 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 				showVertices = 1 - showVertices;
 			break;
 
-		case 'n':
+		case 'n'://show normals
 			if (showVertices != 0)
 				showVertexNormals = 1 - showVertexNormals;
+			break;
+
+		case 'z'://rollback
+			if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
+			{
+				printf("alma\n");
+				RollbackItem::undo();
+			}
 			break;
 	}
 
@@ -866,6 +872,16 @@ void startOperation(Operation op)
 	currentOperation = op;
 	currentOperationDirection = OperationDirection::DIR_ALL;
 
+	//rollback
+	switch (currentOperation)
+	{
+	case MOVE_OBJECT:
+	case SCALE_OBJECT:
+	case ROTATE_OBJECT:
+		RollbackItem::addToBuffer(RollbackOrientation(selectedEditable->getId(), selectedEditable->getPosition(), selectedEditable->getScale(), selectedEditable->getRotation()));
+		break;
+	}
+
 	//helpers
 	int pX, pY;
 	System::getMousePosition(&pX, &pY);
@@ -912,8 +928,9 @@ void startOperation(Operation op)
 			Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
 			bottomLeft = System::convertScreenToGl(bottomLeft);
 			topRight = System::convertScreenToGl(topRight);
-			vec4 temp = vec4(0, 0, 0, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
-			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
+			vec4 temp = vec4(0, 0, 0, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * cam.getPerspective(fabsf((topRight.x-bottomLeft.x)/(topRight.y-bottomLeft.y)));
+			temp = temp / temp.w;
+			operationHelper21 = vec2(bottomLeft.x, topRight.y) + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x + 0.5f), (bottomLeft.y-topRight.y) * (0.5f * temp.y + 0.5f));//position of object on screen
 			operationHelper22 = vec2(pX, pY);
 			operationHelper31 = selectedEditable->getScale();
 
@@ -938,8 +955,9 @@ void startOperation(Operation op)
 			operationHelper31 = operationHelper31 / (float)operationRollbackVertex.size();
 
 			//mouse positions
-			vec4 temp = vec4(operationHelper31, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * PerspectiveMatrix(60, (topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y), 0.01f, 100.0f);
-			operationHelper21 = bottomLeft + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x / temp.w + 0.5f), (topRight.y - bottomLeft.y) * (0.5f * temp.y / temp.w + 0.5f));//position of object on screen
+			vec4 temp = vec4(operationHelper31, 1) * selectedEditable->getGlobalMatrix() * cam.getViewMatrix() * cam.getPerspective(fabsf((topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y)));
+			temp = temp / temp.w;
+			operationHelper21 = vec2(bottomLeft.x, topRight.y) + vec2((topRight.x - bottomLeft.x) * (0.5f * temp.x + 0.5f), (bottomLeft.y - topRight.y) * (0.5f * temp.y + 0.5f));//position of object on screen
 			operationHelper22 = vec2(pX, pY);
 
 			//operation distance
@@ -1053,7 +1071,7 @@ void processOperation(int dX, int dY)
 
 	case Operation::MOVE_VERTEX:
 		Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
-		delta2 = calculateMouseSensitivity3D(bottomLeft, topRight);
+		delta2 = 0.5f*calculateMouseSensitivity3D(bottomLeft, topRight);
 		operationHelper31 = operationHelper31 + delta2.x * dX * cam.getRight() - delta2.y * dY * cam.getUp();
 		delta3 = operationHelper31;
 		
@@ -1074,7 +1092,9 @@ void processOperation(int dX, int dY)
 		break;
 
 	case Operation::MOVE_OBJECT:
-		operationHelper31 = operationHelper31 + 0.00415f * dX * cam.getRight() - 0.00415f * dY * cam.getUp();
+		Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
+		delta2 = 0.5f * calculateMouseSensitivity3D(bottomLeft, topRight);
+		operationHelper31 = operationHelper31 + delta2.x * dX * cam.getRight() - delta2.y * dY * cam.getUp();
 		delta3 = operationHelper31;
 
 		switch (currentOperationDirection)

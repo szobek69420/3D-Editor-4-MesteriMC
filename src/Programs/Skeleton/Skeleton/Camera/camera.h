@@ -36,6 +36,11 @@ public:
 
 	float getFov() const;
 	void setFov(float fov);
+
+	float getClipNear() const;
+	void setClipNear(float clipNear);
+	float getClipFar() const;
+	void setClipFar(float clipFar);
 };
 
 #endif

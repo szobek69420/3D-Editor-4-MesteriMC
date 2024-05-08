@@ -84,3 +84,21 @@ void Camera::setFov(float fov)
 {
 	this->fov = fov;
 }
+
+float Camera::getClipNear() const
+{
+	return this->clipNear;
+}
+void Camera::setClipNear(float clipNear)
+{
+	this->clipNear = clipNear;
+}
+
+float Camera::getClipFar() const
+{
+	return this->clipFar;
+}
+void Camera::setClipFar(float clipFar)
+{
+	this->clipFar = clipFar;
+}
