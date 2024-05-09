@@ -14,20 +14,28 @@ extern std::vector<Editable*> editablesInScene;
 static unsigned int bufferInitialized = 0;
 static unsigned int currentIndexInRollbackBuffer = 0;
 
-
+static unsigned int currentCommandId = 1;
 
 RollbackItem* RollbackItem::rollbackBuffer[ROLLBACK_MAX_COUNT];
 
 
-RollbackItem::RollbackItem(const char* _opName, unsigned int _eid){
+RollbackItem::RollbackItem(const char* _opName, unsigned int _eid):commandId(currentCommandId++)
+{
 	strcpy_s(this->opName, ROLLBACK_MAX_NAME_LENGTH, _opName);
 	this->eid = _eid;
 }
 
-RollbackItem::RollbackItem(const RollbackItem& other)
+RollbackItem::RollbackItem(const RollbackItem& other) :commandId(other.commandId)
 {
 	strcpy(this->opName, other.opName);
 	this->eid = other.eid;
+}
+
+bool RollbackItem::operator==(const RollbackItem& other) const
+{
+	if (this->commandId == other.commandId)
+		return true;
+	return false;
 }
 
 

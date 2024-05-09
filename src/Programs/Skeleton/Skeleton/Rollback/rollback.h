@@ -16,6 +16,8 @@ class RollbackItem {
 
 	friend RollbackCleanup;
 
+	const unsigned int commandId;
+
 public:
 	unsigned int eid;//edible id
 	char opName[20];
@@ -26,6 +28,7 @@ public:
 public:
 	virtual void rollback() = 0;
 	const char* getName();
+	bool operator==(const RollbackItem& other) const;
 
 private:
 	static RollbackItem* rollbackBuffer[ROLLBACK_MAX_COUNT];
@@ -33,6 +36,20 @@ private:
 public:
 	static void addToBuffer(const RollbackItem& hmm);
 	static void undo();
+};
+
+class RollbackComposite :public RollbackItem
+{
+public:
+	std::vector<RollbackItem&> commands;
+
+	RollbackComposite(const char* _opName);
+	RollbackComposite(const RollbackComposite& other);
+
+	void addItem(RollbackItem& item);
+	void removeItem(RollbackItem& item);
+
+	void rollback();
 };
 
 
@@ -81,6 +98,7 @@ public:
 	unsigned int parentId;
 
 	RollbackParentChange(const char* _opName, unsigned int _eid, unsigned int _parentIdOld);
+	RollbackParentChange(const RollbackParentChange& other);
 	void rollback();
 };
 
