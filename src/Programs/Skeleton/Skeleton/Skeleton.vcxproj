@@ -91,6 +91,10 @@
     <ClCompile Include="OrientationIcon\orientation_icon.cpp" />
     <ClCompile Include="Quaternion\quaternion.cpp" />
     <ClCompile Include="Rollback\rollback.cpp" />
+    <ClCompile Include="Rollback\rollback_classes\rollback_add_object.cpp" />
+    <ClCompile Include="Rollback\rollback_classes\rollback_delete_object.cpp" />
+    <ClCompile Include="Rollback\rollback_classes\rollback_orientation_object.cpp" />
+    <ClCompile Include="Rollback\rollback_classes\rollback_orientation_vertex.cpp" />
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="System\system.cpp" />
     <ClCompile Include="TextureLoader\stb_image.cpp" />

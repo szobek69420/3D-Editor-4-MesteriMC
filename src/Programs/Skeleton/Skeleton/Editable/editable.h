@@ -167,6 +167,7 @@ public:
 	char albedoPath[EDIBLE_PATH_MAX_LENGTH];
 
 	SerializableEditable();
+	SerializableEditable(const SerializableEditable& other);
 	SerializableEditable(const Editable* edible);
 };
 

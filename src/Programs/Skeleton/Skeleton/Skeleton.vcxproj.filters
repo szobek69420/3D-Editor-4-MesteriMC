@@ -87,6 +87,18 @@
     <ClCompile Include="Rollback\rollback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Rollback\rollback_classes\rollback_orientation_object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Rollback\rollback_classes\rollback_orientation_vertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Rollback\rollback_classes\rollback_delete_object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Rollback\rollback_classes\rollback_add_object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">

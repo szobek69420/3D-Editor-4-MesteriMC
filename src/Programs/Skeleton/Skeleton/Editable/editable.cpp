@@ -19,6 +19,19 @@ SerializableEditable::SerializableEditable()
 {
 	//does nothing
 }
+SerializableEditable::SerializableEditable(const SerializableEditable& other)
+{
+	this->id = other.id;
+	memcpy(this->name, other.name, EDIBLE_NAME_MAX_LENGTH);
+	this->localPosition = other.localPosition;
+	this->localScale = other.localScale;
+	this->localRotation = other.localRotation;
+	this->parentId = other.parentId;
+	this->childId = other.childId;
+	this->vertices = other.vertices;
+	this->indices = other.indices;
+	memcpy(this->albedoPath, other.albedoPath, EDIBLE_PATH_MAX_LENGTH);
+}
 
 SerializableEditable::SerializableEditable(const Editable* edible)
 {
