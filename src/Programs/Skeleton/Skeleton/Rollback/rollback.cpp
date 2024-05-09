@@ -14,9 +14,16 @@ extern std::vector<Editable*> editablesInScene;
 static unsigned int bufferInitialized = 0;
 static unsigned int currentIndexInRollbackBuffer = 0;
 
-RollbackItem::RollbackItem(){}
+RollbackItem::RollbackItem(const char* _opName, unsigned int _eid){
+	strcpy_s(this->opName, ROLLBACK_MAX_NAME_LENGTH, _opName);
+	this->eid = _eid;
+}
 
 RollbackItem* RollbackItem::rollbackBuffer[ROLLBACK_MAX_COUNT];
+
+const char* RollbackItem::getName() {
+	return this->opName;
+}
 
 void RollbackItem::addToBuffer(const RollbackItem& hmm)
 {
@@ -39,9 +46,19 @@ void RollbackItem::addToBuffer(const RollbackItem& hmm)
 	else if (dynamic_cast<const RollbackOrientationVertex*>(&hmm) != NULL)
 	{
 		const RollbackOrientationVertex* temp = dynamic_cast<const RollbackOrientationVertex*>(&hmm);
-		ri = new RollbackOrientationVertex(temp->eid, temp->vertices, temp->indices);
+		ri = new RollbackOrientationVertex(temp->opName, temp->eid, temp->vertices, temp->indices);
 		if (ri == NULL)
 			return;
+	}
+	else if (dynamic_cast<const RollbackDeleteObject*>(&hmm) != NULL)
+	{
+		const RollbackDeleteObject* temp = dynamic_cast<const RollbackDeleteObject*>(&hmm);
+		ri = new RollbackDeleteObject("", NULL);
+		if (ri == NULL)
+			return;
+
+		strcpy(((RollbackDeleteObject*)ri)->opName, temp->opName);
+		((RollbackDeleteObject*)ri)->edible = temp->edible;
 	}
 
 	if (ri == NULL)
@@ -73,9 +90,9 @@ void RollbackItem::undo()
 }
 
 
-RollbackOrientationObject::RollbackOrientationObject(unsigned int _eid, vec3 _localPosition, vec3 _localScale, quat _localRotation) :
-	RollbackItem(),
-	eid(_eid), localPosition(_localPosition), localScale(_localScale), localRotation(_localRotation)
+RollbackOrientationObject::RollbackOrientationObject(const char* _opName, unsigned int _eid, vec3 _localPosition, vec3 _localScale, quat _localRotation) :
+	RollbackItem(_opName, _eid),
+	localPosition(_localPosition), localScale(_localScale), localRotation(_localRotation)
 {}
 
 void RollbackOrientationObject::rollback()
@@ -96,9 +113,9 @@ void RollbackOrientationObject::rollback()
 }
 
 
-RollbackOrientationVertex::RollbackOrientationVertex(unsigned int _id, const std::vector<VertexData>& _vertices, const std::vector<unsigned int>& _indices)
+RollbackOrientationVertex::RollbackOrientationVertex(const char* _opName, unsigned int _eid, const std::vector<VertexData>& _vertices, const std::vector<unsigned int>& _indices)
+	: RollbackItem(_opName, _eid)
 {
-	this->eid = _id;
 	this->vertices=_vertices;
 	this->indices=_indices;
 }
@@ -115,6 +132,40 @@ void RollbackOrientationVertex::rollback()
 		break;
 #undef e
 	}
+}
+
+RollbackDeleteObject::RollbackDeleteObject(const char* _opName, const Editable* _edible) :RollbackItem(_opName, 0)
+{
+	if (_edible != NULL)
+	{
+		eid = _edible->getId();
+		edible = SerializableEditable(_edible);
+	}
+	else
+	{
+		eid = 0;
+	}
+}
+
+void RollbackDeleteObject::rollback()
+{
+	Editable* realEdible=Editable::add(&edible);
+	editablesInScene.push_back(realEdible);
+
+	//reconstruct parent-child connections
+	for (int i = 0; i < editablesInScene.size(); i++)
+	{
+		if (editablesInScene[i]->getId() == edible.parentId)
+			realEdible->setParent(editablesInScene[i]);
+
+		for (int j = 0; j < edible.childId.size(); j++)
+		{
+			if (editablesInScene[i]->getId() == edible.childId[j])
+				realEdible->addChild(editablesInScene[i]);
+		}
+	}
+	printf("%s\n", realEdible->getName());
+	realEdible->recalculateGlobalMatrix();
 }
 
 //cleanup

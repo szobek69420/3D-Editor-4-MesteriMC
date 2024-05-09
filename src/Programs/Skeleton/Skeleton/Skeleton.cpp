@@ -368,7 +368,19 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 			{
 				if (showVertices == 0) //object mode
 				{
-					//delete object
+					RollbackItem::addToBuffer(RollbackDeleteObject("delete", selectedEditable));
+					//remove selectedEditable from editablesInScene
+					for(int i=0;i<editablesInScene.size();i++)
+						if (editablesInScene[i] == selectedEditable)
+						{
+							editablesInScene.erase(editablesInScene.begin() + i);
+							break;
+						}
+
+					Editable::remove(selectedEditable);
+
+					selectedEditable = NULL;
+					selectedVertexIDs.clear();
 				}
 				else //edit mode
 				{
@@ -614,11 +626,19 @@ void rotateCamera(int dX, int dY)
 
 void moveOrigin(int dX, int dY)
 {
-	static const float SENSITIVITY_MOVE_ORIGIN = 0.01f;
+	static vec2 bottomLeft, topRight;
+	Layout::getLayoutBounds(Layout::OBJECT, &bottomLeft, &topRight);
 
+	static const vec2 MOUSE_SENSITIVITY_AT_1080P_60FOV = vec2(0.0034f, 0.0034f);
+	vec2 ratio = vec2(1920.0f / fabsf(topRight.x - bottomLeft.x), 1080.0f / fabsf(topRight.y - bottomLeft.y));
+	ratio.x *= fabsf((topRight.x - bottomLeft.x) / (topRight.y - bottomLeft.y)) * 0.5625f;//0.5625 is the 1/aspectXY @ 1080p
+	ratio = ratio * (0.5f / sinf(DEG2RAD * 0.5f * cam.getFov()));
+
+	//distance from camera
 	float len = length(cam.getPosition() - camOrigin);
+	ratio = ratio * (len * 0.001f);
 
-	camOrigin = camOrigin - dX*SENSITIVITY_MOVE_ORIGIN * cam.getRight() + dY * SENSITIVITY_MOVE_ORIGIN* cam.getUp();
+	camOrigin = camOrigin - dX*ratio.x * cam.getRight() + dY * ratio.y* cam.getUp();
 	cam.setPosition(camOrigin - len * cam.getDirection());
 	cam.refreshViewMatrix();
 }
@@ -873,12 +893,26 @@ void startOperation(Operation op)
 	currentOperationDirection = OperationDirection::DIR_ALL;
 
 	//rollback
+	static char operationName[ROLLBACK_MAX_NAME_LENGTH];
+	switch (currentOperation)
+	{
+		case MOVE_OBJECT:		strcpy(operationName, "move");		break;
+		case SCALE_OBJECT:		strcpy(operationName, "scale");		break;
+		case ROTATE_OBJECT:		strcpy(operationName, "rotation");	break;
+		case MOVE_VERTEX:		strcpy(operationName, "move");		break;
+		case SCALE_VERTEX:		strcpy(operationName, "scale");		break;
+		case ROTATE_VERTEX:		strcpy(operationName, "rotation");	break;
+		case MOVE_VERTEX_UV:	strcpy(operationName, "move");		break;
+		case SCALE_VERTEX_UV:	strcpy(operationName, "scale");		break;
+		case ROTATE_VERTEX_UV:	strcpy(operationName, "rotation");	break;
+	}
+
 	switch (currentOperation)
 	{
 	case MOVE_OBJECT:
 	case SCALE_OBJECT:
 	case ROTATE_OBJECT:
-		RollbackItem::addToBuffer(RollbackOrientationObject(selectedEditable->getId(), selectedEditable->getPosition(), selectedEditable->getScale(), selectedEditable->getRotation()));
+		RollbackItem::addToBuffer(RollbackOrientationObject(operationName, selectedEditable->getId(), selectedEditable->getPosition(), selectedEditable->getScale(), selectedEditable->getRotation()));
 		break;
 
 	case MOVE_VERTEX:
@@ -887,7 +921,7 @@ void startOperation(Operation op)
 	case MOVE_VERTEX_UV:
 	case SCALE_VERTEX_UV:
 	case ROTATE_VERTEX_UV:
-		RollbackItem::addToBuffer(RollbackOrientationVertex(selectedEditable->getId(), selectedEditable->getVertices(), selectedEditable->getIndices()));
+		RollbackItem::addToBuffer(RollbackOrientationVertex(operationName, selectedEditable->getId(), selectedEditable->getVertices(), selectedEditable->getIndices()));
 		break;
 	}
 

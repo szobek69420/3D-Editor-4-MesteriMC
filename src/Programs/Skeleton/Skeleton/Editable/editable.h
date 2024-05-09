@@ -48,6 +48,7 @@ private:
 	vec3 localScale;
 	Quaternion localRotation;
 	mat4 globalModelMatrix;
+	mat4 inverseGlobalModelMatrix;
 
 	Editable* parent;
 	std::vector<Editable*> children;
@@ -64,14 +65,23 @@ private:
 	~Editable();
 
 	mat4 calculateLocalMatrix();
+	mat4 calculateInverseLocalMatrix();
 
 	void refreshVertexBuffer();
 	void refreshIndexBuffer();
 
 public:
-	void recalculateGlobalMatrix(); //recalculates also the children
-	void setParent(Editable* parent);//NULL means fatherless
+	void recalculateGlobalMatrix(); //recalculates also the children and the inverse matrix
+	
+	const char* getName();
 	void setName(const char* name);
+
+	Editable* getParent();
+	void setParent(Editable* parent);//NULL means fatherless
+
+	const std::vector<Editable*> getChildren();
+	void addChild(Editable* child);
+	void removeChild(const Editable* child);//doesn't set the parent of the child
 
 	const std::vector<VertexData>& getVertices() const;
 	const std::vector<unsigned int>& getIndices() const;
@@ -80,6 +90,7 @@ public:
 	void setVertexData(const std::vector<VertexData>& _newVertices, const std::vector<unsigned int>& _newIndices);
 
 	mat4 getGlobalMatrix();
+	mat4 getInverseGlobalMatrix();
 
 	void setAlbedo(const char* albedoPath = "");
 	unsigned int getAlbedo();
@@ -115,6 +126,7 @@ public:
 
 	static Editable* add(const VertexData* vertices, const unsigned int* indices, unsigned int vertexCount, unsigned int indexCount);
 	static Editable* add(Editable::Preset preset);
+	static Editable* add(const SerializableEditable* se);//the parent-child connections will not be reconstructed here
 	static void remove(Editable* edible);
 	static void removeWithChildren(Editable* edible);
 
@@ -135,6 +147,27 @@ private:
 	static Editable* serializableToEditable(const SerializableEditable* se);//the parents and children are ignored here
 	static void renderHierarchyItem(Editable* edible);//helper function for renderHierarchy
 	static void incrementTextureReference(unsigned int texture); //helper function for clone
+};
+
+
+class SerializableEditable {
+public:
+	unsigned int id;
+	char name[EDIBLE_NAME_MAX_LENGTH];
+	vec3 localPosition;
+	vec3 localScale;
+	quat localRotation;
+
+	unsigned int parentId;//the id of the parent (0 is fatherless)
+	std::vector<unsigned int> childId;//the ids of the children
+
+	std::vector<VertexData> vertices;
+	std::vector<unsigned int> indices;
+
+	char albedoPath[EDIBLE_PATH_MAX_LENGTH];
+
+	SerializableEditable();
+	SerializableEditable(const Editable* edible);
 };
 
 #endif

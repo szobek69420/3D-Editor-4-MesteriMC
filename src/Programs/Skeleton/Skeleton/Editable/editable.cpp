@@ -15,46 +15,29 @@
 
 #include "../TextureLoader/texture_loader.h"
 
-class SerializableEditable {
-public:
-	unsigned int id;
-	char name[EDIBLE_NAME_MAX_LENGTH];
-	vec3 localPosition;
-	vec3 localScale;
-	quat localRotation;
+SerializableEditable::SerializableEditable()
+{
+	//does nothing
+}
 
-	unsigned int parentId;//the id of the parent (0 is fatherless)
-	std::vector<unsigned int> childId;//the ids of the children
+SerializableEditable::SerializableEditable(const Editable* edible)
+{
+	this->id = edible->id;
+	memcpy(this->name, edible->name, EDIBLE_NAME_MAX_LENGTH);
+	this->localPosition = edible->localPosition;
+	this->localScale = edible->localScale;
+	this->localRotation = edible->localRotation;
+	this->parentId = edible->parent == NULL ? 0 : edible->parent->id;
+	for (int i = 0; i < edible->children.size(); i++)
+		this->childId.push_back(edible->children[i]->id);
+	this->vertices.assign(edible->vertices.begin(), edible->vertices.end());
+	this->indices.assign(edible->indices.begin(), edible->indices.end());
 
-	std::vector<VertexData> vertices;
-	std::vector<unsigned int> indices;
-
-	char albedoPath[EDIBLE_PATH_MAX_LENGTH];
-
-	SerializableEditable()
-	{
-		//does nothing
-	}
-
-	SerializableEditable(const Editable* edible)
-	{
-		this->id = edible->id;
-		memcpy(this->name, edible->name, EDIBLE_NAME_MAX_LENGTH);
-		this->localPosition = edible->localPosition;
-		this->localScale = edible->localScale;
-		this->localRotation = edible->localRotation;
-		this->parentId = edible->parent == NULL ? 0 : edible->parent->id;
-		for (int i = 0; i < edible->children.size(); i++)
-			this->childId.push_back(edible->children[i]->id);
-		this->vertices.assign(edible->vertices.begin(), edible->vertices.end());
-		this->indices.assign(edible->indices.begin(), edible->indices.end());
-		
-		if (edible->albedo != 0)
-			memcpy(this->albedoPath, edible->albedoPath, EDIBLE_PATH_MAX_LENGTH);
-		else
-			strcpy(this->albedoPath, "none");
-	}
-};
+	if (edible->albedo != 0)
+		memcpy(this->albedoPath, edible->albedoPath, EDIBLE_PATH_MAX_LENGTH);
+	else
+		strcpy(this->albedoPath, "none");
+}
 
 
 static int currentEditableId = 1;//0 means no object
@@ -117,8 +100,14 @@ Editable::~Editable()
 mat4 Editable::calculateLocalMatrix()
 {
 	mat4 local = ScaleMatrix(localScale)*localRotation.rotateMatrix()*TranslateMatrix(localPosition);
-	//add the rotation later
 	return local;
+}
+
+mat4 Editable::calculateInverseLocalMatrix()
+{
+	quat inverseLocalRotation = Quaternion(-localRotation.s, vec3(localRotation.x, localRotation.y, localRotation.z));
+	mat4 invLocal = TranslateMatrix(-localPosition) * inverseLocalRotation.rotateMatrix() * ScaleMatrix(vec3(1 / localScale.x, 1 / localScale.y, 1 / localScale.z));
+	return invLocal;
 }
 
 void Editable::refreshVertexBuffer()
@@ -137,13 +126,22 @@ void Editable::refreshIndexBuffer()
 
 void Editable::recalculateGlobalMatrix()
 {
-	if(parent==NULL)
-		this->globalModelMatrix = calculateLocalMatrix();
-	else
-		this->globalModelMatrix = calculateLocalMatrix()*parent->globalModelMatrix;
+	this->globalModelMatrix = calculateLocalMatrix();
+	this->inverseGlobalModelMatrix = calculateInverseLocalMatrix();
+
+	if (parent != NULL)
+	{
+		this->globalModelMatrix = this->globalModelMatrix * parent->globalModelMatrix;
+		this->inverseGlobalModelMatrix = parent->inverseGlobalModelMatrix * this->globalModelMatrix;
+	}
 
 	for (int i = 0; i < this->children.size(); i++)
 		this->children[i]->recalculateGlobalMatrix();
+}
+
+Editable* Editable::getParent()
+{
+	return this->parent;
 }
 
 void Editable::setParent(Editable* parent)
@@ -166,6 +164,40 @@ void Editable::setParent(Editable* parent)
 	}
 
 	this->parent = parent;
+}
+
+const std::vector<Editable*> Editable::getChildren()
+{
+	return children;
+}
+
+void Editable::addChild(Editable* child)
+{
+	if (child == NULL)
+		return;
+
+	this->children.push_back(child);
+	child->parent = this;
+}
+
+void Editable::removeChild(const Editable* child)
+{
+	if (child == NULL)
+		return;
+
+	for (int i = 0; i < this->children.size(); i++)
+	{
+		if (this->children[i]->getId() == child->getId())
+		{
+			this->children.erase(this->children.begin() + i);
+			break;
+		}
+	}
+}
+
+const char* Editable::getName()
+{
+	return this->name;
 }
 
 void Editable::setName(const char* name)
@@ -207,6 +239,11 @@ mat4 Editable::getGlobalMatrix()
 	return this->globalModelMatrix;
 }
 
+mat4 Editable::getInverseGlobalMatrix()
+{
+	return this->inverseGlobalModelMatrix;
+}
+
 
 void Editable::setAlbedo(const char* albedoPath)
 {
@@ -244,7 +281,7 @@ quat Editable::getRotation()
 {
 	return this->localRotation;
 }
-void Editable::setRotation(const quat& rotation)
+void Editable::setRotation(const Quaternion& rotation)
 {
 	this->localRotation = rotation;
 }
@@ -592,6 +629,11 @@ Editable* Editable::add(Editable::Preset preset)
 	if(logus!=NULL)
 		Editable::edibles.push_back(logus);
 	return logus;
+}
+
+Editable* Editable::add(const SerializableEditable* se)
+{
+	return serializableToEditable(se);
 }
 
 void Editable::remove(Editable* edible)
