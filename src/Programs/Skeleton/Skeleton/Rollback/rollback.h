@@ -51,7 +51,7 @@ public:
 	std::vector<VertexData> vertices;
 	std::vector<unsigned int> indices;
 
-	RollbackOrientationVertex(const char* _opName, unsigned int _edi, const std::vector<VertexData>& _vertices, const std::vector<unsigned int>& indices);
+	RollbackOrientationVertex(const char* _opName, unsigned int _eid, const std::vector<VertexData>& _vertices, const std::vector<unsigned int>& indices);
 
 	void rollback();
 };
@@ -62,6 +62,20 @@ public:
 
 	RollbackDeleteObject(const char* _opName, const Editable* _edible);
 
+	void rollback();
+};
+
+class RollbackAddObject : public RollbackItem {
+public:
+	RollbackAddObject(const char* _opName, unsigned int _eid);
+	void rollback();
+};
+
+class RollbackParentChange : public RollbackItem {
+public:
+	unsigned int parentId;
+
+	RollbackParentChange(const char* _opName, unsigned int _eid, unsigned int _parentIdOld);
 	void rollback();
 };
 

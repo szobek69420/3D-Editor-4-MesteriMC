@@ -60,6 +60,14 @@ void RollbackItem::addToBuffer(const RollbackItem& hmm)
 		strcpy(((RollbackDeleteObject*)ri)->opName, temp->opName);
 		((RollbackDeleteObject*)ri)->edible = temp->edible;
 	}
+	else if (dynamic_cast<const RollbackAddObject*>(&hmm) != NULL)
+	{
+		ri = (RollbackAddObject*)malloc(sizeof(RollbackAddObject));
+		if (ri == NULL)
+			return;
+
+		memcpy(ri, &hmm, sizeof(RollbackAddObject));
+	}
 
 	if (ri == NULL)
 		return;
@@ -164,8 +172,29 @@ void RollbackDeleteObject::rollback()
 				realEdible->addChild(editablesInScene[i]);
 		}
 	}
-	printf("%s\n", realEdible->getName());
 	realEdible->recalculateGlobalMatrix();
+}
+
+RollbackAddObject::RollbackAddObject(const char* _opName, unsigned int _eid) :RollbackItem(_opName, _eid) {}
+
+void RollbackAddObject::rollback()
+{
+	Editable* edible = NULL;
+
+	for (int i = 0; i < editablesInScene.size(); i++)
+	{
+		if (eid == editablesInScene[i]->getId())
+		{
+			edible = editablesInScene[i];
+			editablesInScene.erase(editablesInScene.begin() + i);
+			break;
+		}
+	}
+
+	if (edible == NULL)
+		return;
+
+	Editable::remove(edible);
 }
 
 //cleanup

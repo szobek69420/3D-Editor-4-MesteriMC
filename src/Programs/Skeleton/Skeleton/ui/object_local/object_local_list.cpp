@@ -8,6 +8,8 @@
 
 #include "../../ImGui/imgui.h"
 
+#include "../../Rollback/rollback.h"
+
 extern std::vector<Editable*> editablesInScene;
 extern Editable* selectedEditable;
 extern std::vector<unsigned int> selectedVertexIDs;
@@ -85,6 +87,7 @@ void ObjectLocalList::render(vec2 bottomLeft, vec2 topRight)
 	ImGui::End();
 
 	//child lists
+	Editable* edible = NULL;
 	switch (currentChildList)
 	{
 	case ChildList::CREATE_OBJECT:
@@ -92,19 +95,19 @@ void ObjectLocalList::render(vec2 bottomLeft, vec2 topRight)
 		ImGui::SetNextWindowSize(ImVec2(ObjectLocalList::width, 80));
 		ImGui::Begin("object_local_list_child", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
 		if (ImGui::Button("Cuba")) {
-			Editable* edible = Editable::add(Editable::Preset::CUBE);
-			if(edible!=NULL)
-				editablesInScene.push_back(edible);
+			edible = Editable::add(Editable::Preset::CUBE);
 		}
 		if (ImGui::Button("Ball")) {
-			Editable* edible = Editable::add(Editable::Preset::SPHERE);
-			if (edible != NULL)
-				editablesInScene.push_back(edible);
+			edible = Editable::add(Editable::Preset::SPHERE);
 		}
 		if (ImGui::Button("Cylinder")) {
-			Editable* edible = Editable::add(Editable::Preset::CYLINDER);
-			if (edible != NULL)
-				editablesInScene.push_back(edible);
+			edible = Editable::add(Editable::Preset::CYLINDER);
+		}
+
+		if (edible != NULL)
+		{
+			editablesInScene.push_back(edible);
+			RollbackItem::addToBuffer(RollbackAddObject("add", edible->getId()));
 		}
 		ImGui::End();
 		break;
