@@ -26,6 +26,6 @@ void RollbackAddObject::rollback()
 
 	if (edible == NULL)
 		return;
-
+	
 	Editable::remove(edible);
 }

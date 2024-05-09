@@ -53,7 +53,15 @@ void RollbackItem::addToBuffer(const RollbackItem& hmm)
 
 	RollbackItem* ri=NULL;
 
-	if (dynamic_cast<const RollbackOrientationObject*>(&hmm) != NULL)
+
+	if (dynamic_cast<const RollbackComposite*>(&hmm) != NULL)
+	{
+		const RollbackComposite* temp = dynamic_cast<const RollbackComposite*>(&hmm);
+		ri = new RollbackComposite(*temp);
+		if (ri == NULL)
+			return;
+	}
+	else if (dynamic_cast<const RollbackOrientationObject*>(&hmm) != NULL)
 	{
 		const RollbackOrientationObject* temp = dynamic_cast<const RollbackOrientationObject*>(&hmm);
 		ri = new RollbackOrientationObject(*temp);
@@ -78,6 +86,13 @@ void RollbackItem::addToBuffer(const RollbackItem& hmm)
 	{
 		const RollbackAddObject* temp = dynamic_cast<const RollbackAddObject*>(&hmm);
 		ri = new RollbackAddObject(*temp);
+		if (ri == NULL)
+			return;
+	}
+	else if (dynamic_cast<const RollbackParentChange*>(&hmm) != NULL)
+	{
+		const RollbackParentChange* temp = dynamic_cast<const RollbackParentChange*>(&hmm);
+		ri = new RollbackParentChange(*temp);
 		if (ri == NULL)
 			return;
 	}

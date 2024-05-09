@@ -654,6 +654,9 @@ void Editable::remove(Editable* edible)
 	for (int i = 0; i < edible->children.size(); i++)
 		edible->children[i]->parent = edible->parent;
 
+	if (edible->parent != NULL)
+		edible->parent->removeChild(edible);
+
 	for (int i = 0; i < edibles.size(); i++)
 	{
 		if (edibles[i] == edible)

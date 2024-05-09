@@ -107,7 +107,7 @@ void ObjectLocalList::render(vec2 bottomLeft, vec2 topRight)
 		if (edible != NULL)
 		{
 			editablesInScene.push_back(edible);
-			RollbackItem::addToBuffer(RollbackAddObject("add", edible->getId()));
+			RollbackItem::addToBuffer(RollbackAddObject("create object", edible->getId()));
 		}
 		ImGui::End();
 		break;
@@ -116,33 +116,34 @@ void ObjectLocalList::render(vec2 bottomLeft, vec2 topRight)
 		ImGui::SetNextWindowPos(ImVec2(currentPos.x + ObjectLocalList::width, currentPos.y+22));
 		ImGui::SetNextWindowSize(ImVec2(ObjectLocalList::width, 80));
 		ImGui::Begin("object_local_list_child", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
+		
+		Editable* edible = NULL;
+		RollbackComposite commands = RollbackComposite("create object");
+
 		if (ImGui::Button("Cuba")) {
-			Editable* edible = Editable::add(Editable::Preset::CUBE);
-			if (edible != NULL)
-			{
-				edible->setPosition(-1 * selectedEditable->getPosition());
-				edible->setParent(selectedEditable);
-				editablesInScene.push_back(edible);
-			}
+			edible = Editable::add(Editable::Preset::CUBE);
 		}
 		if (ImGui::Button("Ball")) {
-			Editable* edible = Editable::add(Editable::Preset::SPHERE);
-			if (edible != NULL)
-			{
-				edible->setPosition(-1 * selectedEditable->getPosition());
-				edible->setParent(selectedEditable);
-				editablesInScene.push_back(edible);
-			}
+			edible = Editable::add(Editable::Preset::SPHERE);
 		}
 		if (ImGui::Button("Cylinder")) {
-			Editable* edible = Editable::add(Editable::Preset::CYLINDER);
-			if (edible != NULL)
-			{
-				edible->setPosition(-1 * selectedEditable->getPosition());
-				edible->setParent(selectedEditable);
-				editablesInScene.push_back(edible);
-			}
+			edible = Editable::add(Editable::Preset::CYLINDER);
 		}
+
+		if (edible != NULL)
+		{
+			edible->setPosition(-1 * selectedEditable->getPosition());
+			editablesInScene.push_back(edible);
+			edible->setParent(selectedEditable);
+			edible->recalculateGlobalMatrix();
+
+			RollbackAddObject command1 = RollbackAddObject("add object", edible->getId());
+			RollbackParentChange command2 = RollbackParentChange("change parent", edible->getId(), selectedEditable->getId());//itt erre nem feltetlenul van szukseg
+			commands.addItem(&command1);
+			commands.addItem(&command2);
+			RollbackItem::addToBuffer(commands);
+		}
+
 		ImGui::End();
 		break;
 	}

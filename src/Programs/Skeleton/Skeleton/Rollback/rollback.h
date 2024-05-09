@@ -40,14 +40,16 @@ public:
 
 class RollbackComposite :public RollbackItem
 {
+	const unsigned int MAX_COMMAND_COUNT = 10;
 public:
-	std::vector<RollbackItem&> commands;
+	RollbackItem* commands[10];
 
 	RollbackComposite(const char* _opName);
 	RollbackComposite(const RollbackComposite& other);
+	~RollbackComposite();
 
-	void addItem(RollbackItem& item);
-	void removeItem(RollbackItem& item);
+	void addItem(const RollbackItem* item);
+	void removeItem(const RollbackItem* item);
 
 	void rollback();
 };

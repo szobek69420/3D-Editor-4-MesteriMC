@@ -401,6 +401,10 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 						}
 					}
 
+					RollbackComposite commands = RollbackComposite("delete");
+					RollbackOrientationVertex command1 = RollbackOrientationVertex("delete vertices", selectedEditable->getId(), selectedEditable->getVertices(), selectedEditable->getIndices());
+					commands.addItem(&command1);
+
 					for (int i = 0; i < selectedVertexIDs.size(); i++)
 						selectedEditable->removeVertex(selectedVertexIDs[i]);
 
@@ -408,10 +412,14 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 
 					if (selectedEditable->getVertices().size() == 0)
 					{
-						Editable::removeWithChildren(selectedEditable);
+						RollbackDeleteObject command2 = RollbackDeleteObject("delete object", selectedEditable);
+						commands.addItem(&command2);
+						Editable::remove(selectedEditable);
 						selectedEditable == NULL;
 						showVertices = 0;
 					}
+
+					RollbackItem::addToBuffer(commands);
 				}
 			}
 			break;
