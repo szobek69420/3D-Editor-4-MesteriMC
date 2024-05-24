@@ -105,6 +105,9 @@
     <ClCompile Include="Rollback\rollback_classes\rollback_parent_change.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Export\export.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -180,6 +183,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Rollback\rollback.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Export\export.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

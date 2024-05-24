@@ -5,6 +5,7 @@
 #include "../framework.h"
 #include "../Camera/camera.h"
 #include "../Quaternion/quaternion.h"
+#include "../Export/export.h"
 
 #define EDIBLE_NAME_MAX_LENGTH 100
 #define EDIBLE_PATH_MAX_LENGTH 200
@@ -32,6 +33,7 @@ class SerializableEditable;
 class Editable {
 
 	friend SerializableEditable;
+	friend Exporter;
 
 
 public:
@@ -79,7 +81,7 @@ public:
 	Editable* getParent();
 	void setParent(Editable* parent);//NULL means fatherless
 
-	const std::vector<Editable*> getChildren();
+	const std::vector<Editable*> getChildren() const;
 	void addChild(Editable* child);
 	void removeChild(const Editable* child);//doesn't set the parent of the child
 

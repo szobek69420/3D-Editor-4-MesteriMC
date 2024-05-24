@@ -179,7 +179,7 @@ void Editable::setParent(Editable* parent)
 	this->parent = parent;
 }
 
-const std::vector<Editable*> Editable::getChildren()
+const std::vector<Editable*> Editable::getChildren() const
 {
 	return children;
 }

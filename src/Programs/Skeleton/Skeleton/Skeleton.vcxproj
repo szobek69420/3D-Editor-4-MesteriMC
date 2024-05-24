@@ -77,6 +77,7 @@
     <ClCompile Include="Axis\axis.cpp" />
     <ClCompile Include="Camera\camera.cpp" />
     <ClCompile Include="Editable\editable.cpp" />
+    <ClCompile Include="Export\export.cpp" />
     <ClCompile Include="framework.cpp" />
     <ClCompile Include="Grid\grid.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
@@ -109,6 +110,7 @@
     <ClInclude Include="Axis\axis.h" />
     <ClInclude Include="Camera\camera.h" />
     <ClInclude Include="Editable\editable.h" />
+    <ClInclude Include="Export\export.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Grid\grid.h" />
     <ClInclude Include="ImGui\imconfig.h" />
