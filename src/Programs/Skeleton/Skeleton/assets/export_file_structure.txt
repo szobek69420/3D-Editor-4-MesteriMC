@@ -6,23 +6,19 @@ animation 0 c:\home
 ...
 #object
 o name
-#parent
-parent name_of_parent //NULL if no fatherless
+parent name_of_parent //FATHERLESS if no fatherless
 #local transform
 position 0 1 0
 rotation 1 0 0 0 //quaternion
 scale 1 1 1
 #object textures
 texture_albedo 1
-texture_specular 2
+texture_specular -1 //no texture
 texture_normal 3
-#vertex layout
-layout putbn //pos uv tangens bitangens normal
+#vertices
 vp 0 1 0
 vuv 0 1
-vt 1 0 0
-vb 0 1 0
-vn 0 0 1
 ...
-f 1/2/3 //indices of the vertices
+#faces
+f 1 2 3 //indices of the vertices
 ...

@@ -28,6 +28,8 @@
 #include "ui/uv_editor/uv_editor.h"
 #include "ui/object_local/object_local_list.h"
 
+#include "Export/export.h"
+
 #define DEG2RAD 0.01745329252f
 
 enum Operation {
@@ -461,9 +463,21 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 		case 'z'://rollback
 			if (glutGetModifiers() == GLUT_ACTIVE_CTRL||69)
 			{
-				printf("alma\n");
 				RollbackItem::undo();
 			}
+			break;
+
+		case 't'://test export
+			Editable * *edibles = (Editable**)malloc(sizeof(Editable*));
+			for(int i=0;i<editablesInScene.size();i++)
+				if (editablesInScene[i]->getParent() == 0)
+				{
+					edibles[0] = editablesInScene[i];
+					Exporter::exportEditable("./morbius.morbius", edibles, 1);
+					printf("done\n");
+					break;
+				}
+			free(edibles);
 			break;
 	}
 
